@@ -1,0 +1,127 @@
+﻿@page "/"
+@inject HttpClient Http
+@using Microsoft.AspNetCore.SignalR.Client
+@using KnaagdierenMarktGame.Shared
+@using Newtonsoft.Json
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<div class="form-group">
+    <label>
+        User:
+        <input @bind="userInput" />
+    </label>
+</div>
+<div class="form-group">
+    <label>
+        Message:
+        <input @bind="messageInput" size="50" />
+    </label>
+</div>
+<div class="form-group">
+    <label>
+        Group:
+        <input @bind="groupInput" size="50" />
+    </label>
+</div>
+<button @onclick="Send" disabled="@(!IsConnected)">Send</button>
+<button @onclick="SendToGroup" disabled="@(!IsConnected)">SendToGroup</button>
+<button @onclick="CreateGroup">Join group</button>
+<textarea @bind="test"></textarea>
+
+<hr>
+
+<ul id="messagesList">
+    @foreach (var message in messages)
+    {
+        <li>@message</li>
+    }
+</ul>
+
+<ul >
+    @foreach (var group in groups)
+    {
+        <li>@group.Name <button @onclick="() => JoinGroup(group.Name)">Join</button></li>
+        @foreach (var member in group.Members)
+        {
+            <li>@member.Name</li>
+        }
+    }
+</ul>
+
+@code {
+    private string test;
+    private HubConnection hubConnection;
+    private List<string> messages = new List<string>();
+    private List<Group> groups = new List<Group>();
+    private string userInput;
+    private string messageInput;
+    private string groupInput;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/gamehub"))
+            .Build();
+
+        hubConnection.On<MessageType, object>("ReceiveMessage", (messageType, message) =>
+        {
+            if (messageType == MessageType.InitGroups)
+            {
+                InitGroups(message);
+            }
+            if (messageType == MessageType.GroupChanged)
+            {
+                GroupChanged(message);
+            }
+            //var encodedMsg = $"{user}: {message}";
+            //messages.Add(encodedMsg);
+            StateHasChanged();
+        });
+        test = (await Http.GetAsync("/api/Game")).ToString();
+        StateHasChanged();
+        await hubConnection.StartAsync();
+    }
+
+    Task Send() =>
+    hubConnection.SendAsync("SendMessage", userInput, messageInput);
+
+    public bool IsConnected =>
+    hubConnection.State == HubConnectionState.Connected;
+
+    public void Dispose()
+    {
+        _ = hubConnection.DisposeAsync();
+    }
+
+    Task CreateGroup() =>
+        hubConnection.SendAsync("JoinGroup", userInput, groupInput);
+
+    async Task JoinGroup(string groupName)
+    {
+        System.Diagnostics.Debug.WriteLine(groupName);
+        await hubConnection.SendAsync("JoinGroup", userInput, groupName);
+    }
+
+    Task SendToGroup() =>
+        hubConnection.SendAsync("SendMessageToGroup", "test", userInput, messageInput);
+
+    public void GroupChanged(object message)
+    {
+        Group changedGroup = JsonConvert.DeserializeObject<Group>(message.ToString());
+        if (groups.FirstOrDefault(group => group.Name == changedGroup.Name) is Group group)
+        {
+            group.Members = changedGroup.Members;
+        }
+        else
+        {
+            groups.Add(changedGroup);
+        }
+    }
+
+    public void InitGroups(object message)
+    {
+        groups = JsonConvert.DeserializeObject<List<Group>>(message.ToString());
+    }
+
+}
