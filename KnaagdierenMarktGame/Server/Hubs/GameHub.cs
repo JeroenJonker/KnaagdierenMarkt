@@ -41,6 +41,15 @@ namespace KnaagdierenMarktGame.Server.Hubs
                 await Clients.All.SendAsync("ReceiveMessage", MessageType.GroupChanged, changedGroup);
             }
         }
+        public async Task LeaveGroup(User user)
+        {
+            if (IsUserInAGroup(user.Name))
+            {
+                Group group = Connections.Instance.Groups.First(groupname => user.Group == groupname.Name);
+                group.Members.Remove(user);
+                await Clients.Others.SendAsync("ReceiveMessage", MessageType.LeavedGroup, user);
+            }
+        }
 
         public async Task SendMessageToGroup(string groupName, string user, string message)
         {

@@ -6,6 +6,6 @@ namespace KnaagdierenMarktGame.Shared
 {
     public enum MessageType
     {
-        GroupChanged, InitGroups
+        GroupChanged, InitGroups, LeavedGroup
     }
 }

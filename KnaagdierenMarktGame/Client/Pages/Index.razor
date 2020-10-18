@@ -6,57 +6,65 @@
 @inject NavigationManager NavigationManager
 @implements IDisposable
 
-<div class="form-group">
-    <label>
-        User:
-        <input @bind="userInput" />
-    </label>
-</div>
-<div class="form-group">
-    <label>
-        Message:
-        <input @bind="messageInput" size="50" />
-    </label>
-</div>
-<div class="form-group">
-    <label>
-        Group:
-        <input @bind="groupInput" size="50" />
-    </label>
-</div>
-<button @onclick="Send" disabled="@(!IsConnected)">Send</button>
-<button @onclick="SendToGroup" disabled="@(!IsConnected)">SendToGroup</button>
-<button @onclick="CreateGroup">Join group</button>
-<textarea @bind="test"></textarea>
 
-<hr>
+@if (!groups.Any(group => group.Name == User.Group))
+{
+    <div class="form-group">
+        <label>
+            User:
+            <input @bind="User.Name"  @bind:event="oninput" required />
+        </label>
+    </div>
 
-<ul id="messagesList">
-    @foreach (var message in messages)
+    if (!string.IsNullOrEmpty(User.Name))
     {
-        <li>@message</li>
+        <div class="form-group">
+            <label>
+                Group:
+                <input @bind="User.Group"  @bind:event="oninput" size="50" />
+            </label>
+        </div>
+        @*<button @onclick="Send" disabled="@(!IsConnected)">Send</button>
+            <button @onclick="SendToGroup" disabled="@(!IsConnected)">SendToGroup</button>*@
+        <button @onclick="CreateGroup" disabled="@(!CanCreateGroup)">Create group</button>
     }
-</ul>
 
-<ul >
+
+    <hr>
+
+
+}
+<ul>
     @foreach (var group in groups)
     {
-        <li>@group.Name <button @onclick="() => JoinGroup(group.Name)">Join</button></li>
+        <li>
+            @group.Name
+            @if (User.Group.ToLower() == group.Name)
+            {
+                <button @onclick="LeaveGroup">Leave</button>
+            }
+            else if (!groups.Any(group => group.Name == User.Group))
+            {
+                <button @onclick="() => JoinGroup(group.Name)" disabled="@(!CanJoinGroup)">Join</button>
+            }
+
+        </li>
         @foreach (var member in group.Members)
         {
             <li>@member.Name</li>
         }
     }
 </ul>
-
 @code {
-    private string test;
     private HubConnection hubConnection;
-    private List<string> messages = new List<string>();
     private List<Group> groups = new List<Group>();
-    private string userInput;
-    private string messageInput;
-    private string groupInput;
+    private User user = new User();
+
+    public User User
+    {
+        get { return user; }
+        set { user = value; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -74,37 +82,56 @@
             {
                 GroupChanged(message);
             }
-            //var encodedMsg = $"{user}: {message}";
-            //messages.Add(encodedMsg);
+            if (messageType == MessageType.LeavedGroup)
+            {
+                LeaveGroup(JsonConvert.DeserializeObject<User>(message.ToString()));
+            }
             StateHasChanged();
         });
-        test = (await Http.GetAsync("/api/Game")).ToString();
+        //test = (await Http.GetAsync("/api/Game")).ToString();
         StateHasChanged();
         await hubConnection.StartAsync();
     }
 
-    Task Send() =>
-    hubConnection.SendAsync("SendMessage", userInput, messageInput);
+    //Task Send() =>
+    //hubConnection.SendAsync("SendMessage", userInput, messageInput);
 
     public bool IsConnected =>
-    hubConnection.State == HubConnectionState.Connected;
+        hubConnection.State == HubConnectionState.Connected;
+
+    public bool CanCreateGroup =>
+        !string.IsNullOrEmpty(User.Name) && !string.IsNullOrEmpty(User.Group)
+        && !groups.Any(group => group.Name.ToLower() == User.Group.ToLower());
+
+    public bool CanJoinGroup =>
+         !groups.Any(group => group.Name == User.Group.ToLower()) && !string.IsNullOrEmpty(User.Name);
+
 
     public void Dispose()
     {
         _ = hubConnection.DisposeAsync();
     }
 
-    Task CreateGroup() =>
-        hubConnection.SendAsync("JoinGroup", userInput, groupInput);
+    async Task CreateGroup()
+    {
+        await hubConnection.SendAsync("JoinGroup", User.Name, User.Group);
+    }
 
     async Task JoinGroup(string groupName)
     {
-        System.Diagnostics.Debug.WriteLine(groupName);
-        await hubConnection.SendAsync("JoinGroup", userInput, groupName);
+        User.Group = groupName;
+        await hubConnection.SendAsync("JoinGroup", User.Name, groupName);
     }
 
-    Task SendToGroup() =>
-        hubConnection.SendAsync("SendMessageToGroup", "test", userInput, messageInput);
+    async Task LeaveGroup()
+    {
+        await hubConnection.SendAsync("LeaveGroup", User);
+        LeaveGroup(User);
+        User.Group = string.Empty;
+    }
+
+    //Task SendToGroup() =>
+    //    hubConnection.SendAsync("SendMessageToGroup", "test", userInput, messageInput);
 
     public void GroupChanged(object message)
     {
@@ -117,6 +144,12 @@
         {
             groups.Add(changedGroup);
         }
+    }
+
+    public void LeaveGroup(User leavedUser)
+    {
+        Group group = groups.First(groupname => leavedUser.Group == groupname.Name);
+        group.Members.Remove(leavedUser);
     }
 
     public void InitGroups(object message)
