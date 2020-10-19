@@ -3,158 +3,39 @@
 @using Microsoft.AspNetCore.SignalR.Client
 @using KnaagdierenMarktGame.Shared
 @using Newtonsoft.Json
-@inject NavigationManager NavigationManager
+@using KnaagdierenMarktGame.Client.Components
+@using KnaagdierenMarktGame.Client.Classes
+@inject GameConnection gameConnection
 @implements IDisposable
 
-
-@if (!groups.Any(group => group.Name == User.Group))
-{
-    <div class="form-group">
-        <label>
-            User:
-            <input @bind="User.Name"  @bind:event="oninput" required />
-        </label>
-    </div>
-
-    if (!string.IsNullOrEmpty(User.Name))
-    {
-        <div class="form-group">
-            <label>
-                Group:
-                <input @bind="User.Group"  @bind:event="oninput" size="50" />
-            </label>
-        </div>
-        @*<button @onclick="Send" disabled="@(!IsConnected)">Send</button>
-            <button @onclick="SendToGroup" disabled="@(!IsConnected)">SendToGroup</button>*@
-        <button @onclick="CreateGroup" disabled="@(!CanCreateGroup)">Create group</button>
-    }
+<Login/>
 
 
-    <hr>
-
-
-}
-<ul>
-    @foreach (var group in groups)
-    {
-        <li>
-            @group.Name
-            @if (User.Group.ToLower() == group.Name)
-            {
-                <button @onclick="LeaveGroup">Leave</button>
-            }
-            else if (!groups.Any(group => group.Name == User.Group))
-            {
-                <button @onclick="() => JoinGroup(group.Name)" disabled="@(!CanJoinGroup)">Join</button>
-            }
-
-        </li>
-        @foreach (var member in group.Members)
-        {
-            <li>@member.Name</li>
-        }
-    }
-</ul>
 @code {
-    private HubConnection hubConnection;
-    private List<Group> groups = new List<Group>();
-    private User user = new User();
+    //private HubConnection hubConnection;
+    //private List<Group> groups = new List<Group>();
+    //private Group Group = new Group();
+    //private User user = new User();
 
-    public User User
-    {
-        get { return user; }
-        set { user = value; }
-    }
+    //public User User
+    //{
+    //    get { return user; }
+    //    set { user = value; }
+    //}
 
     protected override async Task OnInitializedAsync()
     {
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl(NavigationManager.ToAbsoluteUri("/gamehub"))
-            .Build();
-
-        hubConnection.On<MessageType, object>("ReceiveMessage", (messageType, message) =>
-        {
-            if (messageType == MessageType.InitGroups)
-            {
-                InitGroups(message);
-            }
-            if (messageType == MessageType.GroupChanged)
-            {
-                GroupChanged(message);
-            }
-            if (messageType == MessageType.LeavedGroup)
-            {
-                LeaveGroup(JsonConvert.DeserializeObject<User>(message.ToString()));
-            }
-            StateHasChanged();
-        });
-        //test = (await Http.GetAsync("/api/Game")).ToString();
-        StateHasChanged();
-        await hubConnection.StartAsync();
+        await gameConnection.StartConnection();
     }
 
-    //Task Send() =>
-    //hubConnection.SendAsync("SendMessage", userInput, messageInput);
 
     public bool IsConnected =>
-        hubConnection.State == HubConnectionState.Connected;
-
-    public bool CanCreateGroup =>
-        !string.IsNullOrEmpty(User.Name) && !string.IsNullOrEmpty(User.Group)
-        && !groups.Any(group => group.Name.ToLower() == User.Group.ToLower());
-
-    public bool CanJoinGroup =>
-         !groups.Any(group => group.Name == User.Group.ToLower()) && !string.IsNullOrEmpty(User.Name);
+        gameConnection.HubConnection.State == HubConnectionState.Connected;
 
 
     public void Dispose()
     {
-        _ = hubConnection.DisposeAsync();
-    }
-
-    async Task CreateGroup()
-    {
-        await hubConnection.SendAsync("JoinGroup", User.Name, User.Group);
-    }
-
-    async Task JoinGroup(string groupName)
-    {
-        User.Group = groupName;
-        await hubConnection.SendAsync("JoinGroup", User.Name, groupName);
-    }
-
-    async Task LeaveGroup()
-    {
-        await hubConnection.SendAsync("LeaveGroup", User);
-        LeaveGroup(User);
-        User.Group = string.Empty;
-    }
-
-    //Task SendToGroup() =>
-    //    hubConnection.SendAsync("SendMessageToGroup", "test", userInput, messageInput);
-
-    public void GroupChanged(object message)
-    {
-        Group changedGroup = JsonConvert.DeserializeObject<Group>(message.ToString());
-        if (groups.FirstOrDefault(group => group.Name == changedGroup.Name) is Group group)
-        {
-            group.Members = changedGroup.Members;
-        }
-        else
-        {
-            groups.Add(changedGroup);
-        }
-    }
-
-    public void LeaveGroup(User leavedUser)
-    {
-        Group group = groups.First(groupname => leavedUser.Group == groupname.Name);
-        group.Members.Remove(leavedUser);
-    }
-
-    public void InitGroups(object message)
-    {
-        groups = JsonConvert.DeserializeObject<List<Group>>(message.ToString());
+        _ = gameConnection.HubConnection.DisposeAsync();
     }
 
 }

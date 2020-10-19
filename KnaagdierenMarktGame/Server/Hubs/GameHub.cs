@@ -48,6 +48,11 @@ namespace KnaagdierenMarktGame.Server.Hubs
                 Group group = Connections.Instance.Groups.First(groupname => user.Group == groupname.Name);
                 group.Members.Remove(user);
                 await Clients.Others.SendAsync("ReceiveMessage", MessageType.LeavedGroup, user);
+                if (group.Members.Count < 1)
+                {
+                    await Clients.All.SendAsync("ReceiveMessage", MessageType.GroupDeleted, group);
+                    Connections.Instance.Groups.Remove(group);
+                }
             }
         }
 

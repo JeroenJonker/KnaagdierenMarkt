@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30523.141
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KnaagdierenMarktGame.Server", "KnaagdierenMarktGame\Server\KnaagdierenMarktGame.Server.csproj", "{26EA37D7-796B-4F81-99E6-FC9DFC64779B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KnaagdierenMarktGame.Server", "KnaagdierenMarktGame\Server\KnaagdierenMarktGame.Server.csproj", "{26EA37D7-796B-4F81-99E6-FC9DFC64779B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KnaagdierenMarktGame.Client", "KnaagdierenMarktGame\Client\KnaagdierenMarktGame.Client.csproj", "{90B62B37-6175-4F38-84A7-9D3D6B5010F8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KnaagdierenMarktGame.Client", "KnaagdierenMarktGame\Client\KnaagdierenMarktGame.Client.csproj", "{90B62B37-6175-4F38-84A7-9D3D6B5010F8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KnaagdierenMarktGame.Shared", "KnaagdierenMarktGame\Shared\KnaagdierenMarktGame.Shared.csproj", "{048B9F1D-8356-4AF8-B4F3-13C47B4A04C9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KnaagdierenMarktGame.Shared", "KnaagdierenMarktGame\Shared\KnaagdierenMarktGame.Shared.csproj", "{048B9F1D-8356-4AF8-B4F3-13C47B4A04C9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

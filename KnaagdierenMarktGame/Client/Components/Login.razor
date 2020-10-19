@@ -1,0 +1,156 @@
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@using KnaagdierenMarktGame.Shared
+@using KnaagdierenMarktGame.Client.Classes
+@inject GameConnection gameConnection
+@using Newtonsoft.Json
+
+@if (!groups.Any(group => group.Name == User.Group))
+{
+    <div class="form-group">
+        <label>
+            User:
+            <input @bind="User.Name" @bind:event="oninput" required />
+        </label>
+    </div>
+
+    if (!string.IsNullOrEmpty(User.Name) && !IsUserNameInUse())
+    {
+        <div class="form-group">
+            <label>
+                Group:
+                <input @bind="Group.Name" @bind:event="oninput" size="50" />
+            </label>
+        </div>
+        @*<button @onclick="Send" disabled="@(!IsConnected)">Send</button>
+            <button @onclick="SendToGroup" disabled="@(!IsConnected)">SendToGroup</button>*@
+        <button @onclick="CreateGroup" disabled="@(!CanCreateGroup)">Create group</button>
+    }
+
+    <hr>
+
+
+}
+@if (!string.IsNullOrEmpty(User.Name))
+{
+    <ul>
+        @foreach (var group in groups)
+        {
+            <li>
+                @group.Name
+                @if (!string.IsNullOrEmpty(User.Group) && User.Group.ToLower() == group.Name)
+                {
+                    <button @onclick="LeaveGroup">Leave</button>
+                }
+                else if (!groups.Any(group => group.Name == User.Group) && !IsUserNameInUse())
+                {
+                    <button @onclick="() => JoinGroup(group.Name)" disabled="@(!CanJoinGroup)">Join</button>
+                }
+
+            </li>
+            @foreach (var member in group.Members)
+            {
+                <li>@member.Name</li>
+            }
+        }
+    </ul>
+}
+
+@code {
+    private List<Group> groups = new List<Group>();
+    private Group Group = new Group();
+    private User user = new User();
+
+    public User User
+    {
+        get { return user; }
+        set { user = value; }
+    }
+
+    protected override void OnInitialized()
+    {
+        gameConnection.OnNewMessage += HandleMessage;
+        base.OnInitialized();
+    }
+
+    protected async Task HandleMessage(MessageType messageType, object message)
+    {
+        if (messageType == MessageType.InitGroups)
+        {
+            InitGroups(message);
+        }
+        if (messageType == MessageType.GroupChanged)
+        {
+            GroupChanged(message);
+        }
+        if (messageType == MessageType.LeavedGroup)
+        {
+            LeaveGroup(JsonConvert.DeserializeObject<User>(message.ToString()));
+        }
+        if (messageType == MessageType.GroupDeleted)
+        {
+            GroupDeleted(JsonConvert.DeserializeObject<Group>(message.ToString()));
+        }
+        StateHasChanged();
+    }
+
+
+    public bool CanCreateGroup =>
+        !string.IsNullOrEmpty(User.Name) && !string.IsNullOrEmpty(Group.Name)
+        && !groups.Any(group => group.Name.ToLower() == Group.Name.ToLower());
+
+    public bool CanJoinGroup =>
+         !string.IsNullOrEmpty(User.Name) && (string.IsNullOrEmpty(User.Group) || !groups.Any(group => group.Name == User.Group.ToLower()));
+
+
+    async Task CreateGroup()
+    {
+        await gameConnection.HubConnection.SendAsync("JoinGroup", User.Name, Group.Name);
+        User.Group = Group.Name;
+    }
+
+    async Task JoinGroup(string groupName)
+    {
+        User.Group = groupName;
+        await gameConnection.HubConnection.SendAsync("JoinGroup", User.Name, groupName);
+    }
+
+    async Task LeaveGroup()
+    {
+        await gameConnection.HubConnection.SendAsync("LeaveGroup", User);
+        LeaveGroup(User);
+        User.Group = string.Empty;
+    }
+
+
+    public void GroupChanged(object message)
+    {
+        Group changedGroup = JsonConvert.DeserializeObject<Group>(message.ToString());
+        if (groups.FirstOrDefault(group => group.Name == changedGroup.Name) is Group group)
+        {
+            group.Members = changedGroup.Members;
+        }
+        else
+        {
+            groups.Add(changedGroup);
+        }
+    }
+
+    public void LeaveGroup(User leavedUser)
+    {
+        Group group = groups.First(groupname => leavedUser.Group == groupname.Name);
+        group.Members.Remove(new User() { Name = leavedUser.Name });
+    }
+
+    public void GroupDeleted(Group deletedGroup)
+    {
+        Group group = groups.First(groupname => deletedGroup.Name == groupname.Name);
+        groups.Remove(group);
+    }
+
+    public bool IsUserNameInUse() => groups.Any(group => group.Members.Any(member => member.Name == User.Name));
+
+    public void InitGroups(object message)
+    {
+        groups = JsonConvert.DeserializeObject<List<Group>>(message.ToString());
+    }
+}
