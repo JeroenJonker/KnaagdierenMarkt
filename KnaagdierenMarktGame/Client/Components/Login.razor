@@ -2,23 +2,24 @@
 @using KnaagdierenMarktGame.Shared
 @using KnaagdierenMarktGame.Client.Classes
 @inject GameConnection gameConnection
+@inject GameState gameState
 @using Newtonsoft.Json
 
-@if (!groups.Any(group => group.Name == User.Group))
+@if (string.IsNullOrEmpty(Group.Name))
 {
     <div class="form-group">
         <label>
             User:
-            <input @bind="User.Name" @bind:event="oninput" required />
+            <input @bind="UserName" @bind:event="oninput" required />
         </label>
     </div>
 
-    if (!string.IsNullOrEmpty(User.Name) && !IsUserNameInUse())
+    if (!string.IsNullOrEmpty(UserName) && !IsUserNameInUse())
     {
         <div class="form-group">
             <label>
                 Group:
-                <input @bind="Group.Name" @bind:event="oninput" size="50" />
+                <input @bind="GroupInput" @bind:event="oninput" size="50" />
             </label>
         </div>
         @*<button @onclick="Send" disabled="@(!IsConnected)">Send</button>
@@ -30,26 +31,27 @@
 
 
 }
-@if (!string.IsNullOrEmpty(User.Name))
+@if (!string.IsNullOrEmpty(UserName))
 {
     <ul>
         @foreach (var group in groups)
         {
             <li>
                 @group.Name
-                @if (!string.IsNullOrEmpty(User.Group) && User.Group.ToLower() == group.Name)
+                @if (Group != null && Group.Name == group.Name)
                 {
                     <button @onclick="LeaveGroup">Leave</button>
+                    @*<button @onclick="StartGame">Start</button>*@
                 }
-                else if (!groups.Any(group => group.Name == User.Group) && !IsUserNameInUse())
+                else if (string.IsNullOrEmpty(Group.Name) && !IsUserNameInUse())
                 {
-                    <button @onclick="() => JoinGroup(group.Name)" disabled="@(!CanJoinGroup)">Join</button>
+                    <button @onclick="() => JoinGroup(group)" disabled="@(!CanJoinGroup)">Join</button>
                 }
 
             </li>
-            @foreach (var member in group.Members)
+            @foreach (string member in group.Members)
             {
-                <li>@member.Name</li>
+                <li>@member</li>
             }
         }
     </ul>
@@ -58,13 +60,8 @@
 @code {
     private List<Group> groups = new List<Group>();
     private Group Group = new Group();
-    private User user = new User();
-
-    public User User
-    {
-        get { return user; }
-        set { user = value; }
-    }
+    public string GroupInput { get; set; }
+    public string UserName { get; set; }
 
     protected override void OnInitialized()
     {
@@ -74,6 +71,7 @@
 
     protected async Task HandleMessage(MessageType messageType, object message)
     {
+
         if (messageType == MessageType.InitGroups)
         {
             InitGroups(message);
@@ -84,41 +82,58 @@
         }
         if (messageType == MessageType.LeavedGroup)
         {
-            LeaveGroup(JsonConvert.DeserializeObject<User>(message.ToString()));
+            LeaveGroup(JsonConvert.DeserializeObject<string>(message.ToString()));
         }
         if (messageType == MessageType.GroupDeleted)
         {
             GroupDeleted(JsonConvert.DeserializeObject<Group>(message.ToString()));
         }
+        if (messageType == MessageType.StartGame)
+        {
+            StartGame(message.ToString());
+        }
         StateHasChanged();
     }
 
+    public void StartGame(string startPlayer)
+    {
+        System.Diagnostics.Debug.WriteLine("GROUPMEMBERS");
+        foreach (string groupmember in Group.Members)
+        {
+            System.Diagnostics.Debug.WriteLine(groupmember);
+        }
+        gameState.GameSetup(UserName, Group.Members, startPlayer);
+        StateHasChanged();
+    }
 
     public bool CanCreateGroup =>
-        !string.IsNullOrEmpty(User.Name) && !string.IsNullOrEmpty(Group.Name)
-        && !groups.Any(group => group.Name.ToLower() == Group.Name.ToLower());
+        !string.IsNullOrEmpty(UserName) && !string.IsNullOrEmpty(GroupInput)
+        && !groups.Any(group => group.Name.ToLower() == GroupInput.ToLower());
 
     public bool CanJoinGroup =>
-         !string.IsNullOrEmpty(User.Name) && (string.IsNullOrEmpty(User.Group) || !groups.Any(group => group.Name == User.Group.ToLower()));
+         !string.IsNullOrEmpty(UserName) && string.IsNullOrEmpty(GroupInput);
 
 
     async Task CreateGroup()
     {
-        await gameConnection.HubConnection.SendAsync("JoinGroup", User.Name, Group.Name);
-        User.Group = Group.Name;
+        Group = new Group() { Name = GroupInput };
+        Group.Members.Add(UserName);
+        await gameConnection.HubConnection.SendAsync("JoinGroup", Group);
     }
 
-    async Task JoinGroup(string groupName)
+    async Task JoinGroup(Group selectedGroup)
     {
-        User.Group = groupName;
-        await gameConnection.HubConnection.SendAsync("JoinGroup", User.Name, groupName);
+        Group = selectedGroup;
+        Group.Members.Add(UserName);
+        await gameConnection.HubConnection.SendAsync("JoinGroup", Group);
     }
 
     async Task LeaveGroup()
     {
-        await gameConnection.HubConnection.SendAsync("LeaveGroup", User);
-        LeaveGroup(User);
-        User.Group = string.Empty;
+        await gameConnection.HubConnection.SendAsync("LeaveGroup", UserName);
+        LeaveGroup(UserName);
+        Group = null;
+        //User.Group = string.Empty;
     }
 
 
@@ -129,16 +144,27 @@
         {
             group.Members = changedGroup.Members;
         }
+        //moet beter kunnen...
+        if (changedGroup.Name == Group.Name)
+        {
+            Group.Members = changedGroup.Members;
+        }
         else
         {
             groups.Add(changedGroup);
         }
+        // change according to the amount of players
+        if (changedGroup.Members.Count >= 2)
+        {
+            GroupDeleted(changedGroup);
+        }
     }
 
-    public void LeaveGroup(User leavedUser)
+    public void LeaveGroup(string leavedUser)
     {
-        Group group = groups.First(groupname => leavedUser.Group == groupname.Name);
-        group.Members.Remove(new User() { Name = leavedUser.Name });
+        // betere naamgeving
+        Group group = groups.First(groupname => groupname.Members.Contains(leavedUser));
+        group.Members.Remove(leavedUser);
     }
 
     public void GroupDeleted(Group deletedGroup)
@@ -147,7 +173,7 @@
         groups.Remove(group);
     }
 
-    public bool IsUserNameInUse() => groups.Any(group => group.Members.Any(member => member.Name == User.Name));
+    public bool IsUserNameInUse() => groups.Any(group => group.Members.Any(member => member == UserName));
 
     public void InitGroups(object message)
     {

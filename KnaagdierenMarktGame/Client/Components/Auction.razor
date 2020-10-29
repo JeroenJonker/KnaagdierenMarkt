@@ -1,0 +1,162 @@
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@using KnaagdierenMarktGame.Shared
+@using KnaagdierenMarktGame.Client.Classes
+@using Newtonsoft.Json
+@inject GameConnection gameConnection
+@inject GameState GameState
+<h3>Auction</h3>
+@if (GameState.CurrentPlayer != null && GameState.User == GameState.CurrentPlayer)
+{
+    <button @onclick="OnAuctionClick">Auction</button>
+    @if (HighestOffer < 0)
+    {
+        <button @onclick="OnAcceptOffer">Accept Offer</button>
+        @*<button @onclick="OnRightOfSale">Right of Sale</button>*@
+    }
+}
+else if (AuctionedAnimalCard != null && GameState.User != GameState.CurrentPlayer)
+{
+    <div class="form-group">
+        <label>
+            Group:
+            <input @bind="UserOffer" @bind:event="oninput" size="50" step="10" />
+        </label>
+    </div>
+    <button @onclick="OnMakeOffer" disabled="@(UserOffer <= HighestOffer)">Make offer</button>
+}
+@if (AuctionedAnimalCard != null)
+{
+    <label>New card</label>
+    <p>@AuctionedAnimalCard.AnimalType</p>
+    <p>@AuctionedAnimalCard.Value</p>
+    <label>Current offer</label>
+    <p>@HighestOffer</p>
+    if (HighestOfferPlayer != null)
+    {
+        <p>@HighestOfferPlayer.Name</p>
+    }
+    <label>Available Time</label>
+    <p></p>
+    <MoneySelectors MoneyCards="@GameState.User.MoneyCards" @bind-ChosenMoneyCards="ChosenMoneyCards" />
+
+    foreach(KeyValuePair<int,int> a in ChosenMoneyCards)
+    {
+        <p>@a.Key ... @a.Value</p>
+    }
+
+}
+
+
+@code {
+    //public GameState GameState { get; set; }
+
+    public int HighestOffer { get; set; } = 0;
+
+    public List<int> OfferedMoneyCards = new List<int>();
+
+    public int UserOffer { get; set; }
+
+    public Player HighestOfferPlayer { get; set; }
+
+    public List<Player> Disqwalified { get; set; } = new List<Player>();
+
+    public AnimalCard AuctionedAnimalCard { get; set; }
+
+    public Dictionary<int, int> ChosenMoneyCards = new Dictionary<int, int>();
+
+    protected override void OnInitialized()
+    {
+        gameConnection.OnNewNewMessage += HandleMessage;
+        GameState.OnPropertyChanged += UpdateScreen;
+        base.OnInitialized();
+    }
+
+    public async Task UpdateScreen(object ob) => StateHasChanged();
+
+    protected override Task OnInitializedAsync()
+    {
+        return base.OnInitializedAsync();
+    }
+
+    protected async Task HandleMessage(Message message)
+    {
+        if (message.MessageType == MessageType.PulledAuctionCard)
+        {
+            AuctionedAnimalCard = JsonConvert.DeserializeObject<AnimalCard>(message.Objects[0].ToString());
+        }
+        else if (message.MessageType == MessageType.MakeAuctionOffer)
+        {
+            int newOffer = JsonConvert.DeserializeObject<int>(message.Objects[0].ToString());
+            if (HighestOffer < newOffer)
+            {
+                HighestOfferPlayer = GameState.Players.First(Player => Player.Name == message.Sender);
+                HighestOffer = newOffer;
+            }
+        }
+        StateHasChanged();
+    }
+
+    public async Task OnAuctionClick()
+    {
+        Random random = new Random();
+        AuctionedAnimalCard = GameState.RemainingAuctionCards[random.Next(GameState.RemainingAuctionCards.Count())];
+        GameState.RemainingAuctionCards.Remove(AuctionedAnimalCard);
+        HighestOffer = 0;
+        Message message = new Message() { MessageType = MessageType.PulledAuctionCard, Sender = GameState.User.Name };
+        message.Objects.Add(AuctionedAnimalCard);
+        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
+
+    public async Task OnCountdownClick()
+    {
+        await SendSimpleMessage(MessageType.BeginCountdown);
+    }
+
+    public async Task OnMakeOffer()
+    {
+        Message message = new Message() { MessageType = MessageType.MakeAuctionOffer, Sender = GameState.User.Name };
+        message.Objects.Add(UserOffer);
+        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
+
+    public async Task OnAcceptOffer()
+    {
+        if (HighestOfferPlayer.MoneyCards.Aggregate((value, total) => total += value) <= HighestOffer)
+        {
+            await SendSimpleMessage(MessageType.AcceptAuctionOffer);
+        }
+        else
+        {
+            HighestOffer = 0;
+            Disqwalified.Add(HighestOfferPlayer);
+            Message message = new Message() { MessageType = MessageType.FailedOffer, Sender = GameState.User.Name };
+            message.Objects.Add(HighestOfferPlayer);
+            await gameConnection.HubConnection.SendAsync("SendMessage", message);
+        }
+    }
+
+    public async Task OnRightOfSale(Player player, List<int> moneyCards)
+    {
+        await SendMoneyCards(MessageType.RightOfSale, moneyCards);
+    }
+
+    public async Task OnPayOffer(Player player, List<int> moneyCards)
+    {
+        await SendMoneyCards(MessageType.PayOffer, moneyCards);
+    }
+
+    public async Task SendMoneyCards(MessageType messageType, List<int> moneyCards)
+    {
+        GameState.User.MoneyCards = GameState.User.MoneyCards.Except(moneyCards).ToList();
+        Message message = new Message() { MessageType = messageType, Sender = GameState.User.Name };
+        message.Objects.Add(moneyCards);
+        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
+
+    public async Task SendSimpleMessage(MessageType messageType)
+    {
+        Message message = new Message() { MessageType = messageType, Sender = GameState.User.Name };
+        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
+
+}

@@ -1,0 +1,42 @@
+﻿<h3>MoneySelectors</h3>
+@foreach (int moneyType in MoneyCards.Distinct().OrderBy(a => a).ToList())
+{
+    <MoneySelector MoneyCardAmount="moneyType" TotalAmount="MoneyCards.Count(a => a == moneyType)" OnAmountChanged="UpdateChosenMoneyCards"/>
+}
+
+@code {
+    [Parameter]
+    public List<int> MoneyCards { get; set; } = new List<int>();
+
+    [Parameter]
+    public Dictionary<int, int> ChosenMoneyCards { get; set; } = new Dictionary<int, int>();
+
+    [Parameter]
+    public EventCallback<Dictionary<int, int>> ChosenMoneyCardsChanged { get; set; }
+
+    public int TotalAmout(int MoneyValue) => 0 + MoneyCards.Aggregate((card, total) => card == MoneyValue ? total++ : total);
+
+
+    public async Task UpdateChosenMoneyCards(KeyValuePair<int,int> chosenMoneyCards)
+    {
+        int Amount = chosenMoneyCards.Value;
+        int MoneyCard = chosenMoneyCards.Key;
+        if (Amount > 0)
+        {
+            if (ChosenMoneyCards.ContainsKey(MoneyCard))
+            {
+                ChosenMoneyCards[MoneyCard] = Amount;
+            }
+            else
+            {
+                ChosenMoneyCards.Add(MoneyCard, Amount);
+            }
+        }
+        else if (ChosenMoneyCards.ContainsKey(MoneyCard))
+        {
+            ChosenMoneyCards.Remove(MoneyCard);
+        }
+        await ChosenMoneyCardsChanged.InvokeAsync(ChosenMoneyCards);
+    }
+
+}

@@ -1,0 +1,30 @@
+﻿<h3>MoneySelector</h3>
+<h1>@MoneyCardAmount</h1>
+<div>
+    <div>@AmountLeft</div>
+    <input type="range" @bind="AmountOffered" @bind:event="oninput" max="@TotalAmount"/>
+    <div>@AmountOffered</div>
+</div>
+
+@code {
+    [Parameter]
+    public int MoneyCardAmount { get; set; } = 0;
+
+    [Parameter]
+    public int TotalAmount { get; set; } = 0;
+
+    [Parameter]
+    public EventCallback<KeyValuePair<int, int>> OnAmountChanged { get; set; }
+
+    private int amountOffered = 0;
+
+    public int AmountOffered
+    {
+        get { return amountOffered; }
+        set { amountOffered = value; OnAmountChanged.InvokeAsync(new KeyValuePair<int, int>(MoneyCardAmount, AmountOffered)); }
+    }
+
+
+    public int AmountLeft => TotalAmount - AmountOffered;
+
+}
