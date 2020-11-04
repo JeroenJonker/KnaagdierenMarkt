@@ -44,7 +44,7 @@ namespace KnaagdierenMarktGame.Server.Hubs
             if (changedGroup.Members.Count >= 2)
             {
                 // temporary delay
-                Thread.Sleep(5000);
+                Thread.Sleep(1000);
                 await StartGame(changedGroup.Name, changedGroup);
             }
             //}

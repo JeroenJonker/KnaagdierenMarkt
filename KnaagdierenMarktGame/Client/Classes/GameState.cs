@@ -14,6 +14,8 @@ namespace KnaagdierenMarktGame.Client.Classes
         public event PropertyChanged OnPropertyChanged;
         public List<AnimalCard> RemainingAuctionCards { get; set; } = new List<AnimalCard>();
         public List<Player> Players { get; set; } = new List<Player>();
+        public List<string> PlayerOrder { get; set; } = new List<string>();
+
         private Player user;
 
         public Player User
@@ -40,9 +42,8 @@ namespace KnaagdierenMarktGame.Client.Classes
             SetupPlayers(playerNames);
             CurrentPlayer = Players.First(player => player.Name == startPlayer);
             User = Players.First(player => player.Name == userName);
-            System.Diagnostics.Debug.WriteLine(User.Name + " " + CurrentPlayer.Name);
-            System.Diagnostics.Debug.WriteLine(User == CurrentPlayer);
             SetupAuctionCards();
+            PlayerOrder.Add(CurrentPlayer.Name);
             OnPropertyChanged?.Invoke(CurrentPlayer);
         }
 

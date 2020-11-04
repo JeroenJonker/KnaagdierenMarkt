@@ -2,13 +2,18 @@
 @using KnaagdierenMarktGame.Shared
 @using KnaagdierenMarktGame.Client.Classes
 @using Newtonsoft.Json
+@using System.Timers
 @inject GameConnection gameConnection
 @inject GameState GameState
 <h3>Auction</h3>
 @if (GameState.CurrentPlayer != null && GameState.User == GameState.CurrentPlayer)
 {
     <button @onclick="OnAuctionClick">Auction</button>
-    @if (HighestOffer < 0)
+    @if (AuctionedAnimalCard != null)
+    {
+        <button @onclick="BeginCountdown">Begin Countdown</button>
+    }
+    @if (HighestOffer > 0 && CountdownTimer == 0)
     {
         <button @onclick="OnAcceptOffer">Accept Offer</button>
         @*<button @onclick="OnRightOfSale">Right of Sale</button>*@
@@ -24,6 +29,7 @@ else if (AuctionedAnimalCard != null && GameState.User != GameState.CurrentPlaye
     </div>
     <button @onclick="OnMakeOffer" disabled="@(UserOffer <= HighestOffer)">Make offer</button>
 }
+<p>@TotalAmoutOfMoney</p>
 @if (AuctionedAnimalCard != null)
 {
     <label>New card</label>
@@ -36,21 +42,30 @@ else if (AuctionedAnimalCard != null && GameState.User != GameState.CurrentPlaye
         <p>@HighestOfferPlayer.Name</p>
     }
     <label>Available Time</label>
-    <p></p>
-    <MoneySelectors MoneyCards="@GameState.User.MoneyCards" @bind-ChosenMoneyCards="ChosenMoneyCards" />
-
-    foreach(KeyValuePair<int,int> a in ChosenMoneyCards)
+    <p>@CountdownTimer</p>
+    if (ShowMoneySelectors)
     {
-        <p>@a.Key ... @a.Value</p>
+        <MoneySelectors MoneyCards="@GameState.User.MoneyCards" @bind-ChosenMoneyCards="ChosenMoneyCards" />
+        foreach (KeyValuePair<int, int> a in ChosenMoneyCards)
+        {
+            <p>@a.Key ... @a.Value</p>
+        }
+        if (MatchesOffer)
+        {
+            <button @onclick="OnPayOffer">Pay</button>
+        }
     }
-
 }
 
 
 @code {
-    //public GameState GameState { get; set; }
-
     public int HighestOffer { get; set; } = 0;
+
+    public bool ShowMoneySelectors { get; set; } = false;
+
+    public bool MatchesOffer => (int)ChosenMoneyCards.Sum(a => (a.Key * a.Value)) >= HighestOffer;
+
+    public int TotalAmoutOfMoney { get => GameState.User.MoneyCards.Aggregate((value, total) => total += value); }
 
     public List<int> OfferedMoneyCards = new List<int>();
 
@@ -63,6 +78,10 @@ else if (AuctionedAnimalCard != null && GameState.User != GameState.CurrentPlaye
     public AnimalCard AuctionedAnimalCard { get; set; }
 
     public Dictionary<int, int> ChosenMoneyCards = new Dictionary<int, int>();
+
+    public int CountdownTimer { get; set; } = 0;
+
+    public Timer Timer { get; set; }
 
     protected override void OnInitialized()
     {
@@ -80,20 +99,107 @@ else if (AuctionedAnimalCard != null && GameState.User != GameState.CurrentPlaye
 
     protected async Task HandleMessage(Message message)
     {
-        if (message.MessageType == MessageType.PulledAuctionCard)
+        switch (message.MessageType)
         {
-            AuctionedAnimalCard = JsonConvert.DeserializeObject<AnimalCard>(message.Objects[0].ToString());
-        }
-        else if (message.MessageType == MessageType.MakeAuctionOffer)
-        {
-            int newOffer = JsonConvert.DeserializeObject<int>(message.Objects[0].ToString());
-            if (HighestOffer < newOffer)
-            {
-                HighestOfferPlayer = GameState.Players.First(Player => Player.Name == message.Sender);
-                HighestOffer = newOffer;
-            }
+            case MessageType.BeginCountdown: StartCountdown(); break;
+            case MessageType.MakeAuctionOffer: MakeActionOffer(message); break;
+            case MessageType.AcceptAuctionOffer: AcceptOffer(message); break;
+            case MessageType.PayOffer: PayOffer(message); break;
+            case MessageType.PulledAuctionCard: AuctionedAnimalCard = JsonConvert.DeserializeObject<AnimalCard>(message.Objects[0].ToString()); break;
+            case MessageType.NextPlayer: GameState.CurrentPlayer = GameState.Players.First(player => player.Name == message.Objects[0].ToString()); break;
+            case MessageType.RightOfSale:  break;
         }
         StateHasChanged();
+    }
+
+    public async void BeginCountdown()
+    {
+        await SendSimpleMessage(MessageType.BeginCountdown);
+    }
+
+    public void HandleTimer(object sender, ElapsedEventArgs e)
+    {
+        CountdownTimer--;
+        if (CountdownTimer < 1)
+        {
+            Timer.Stop();
+        }
+        StateHasChanged();
+    }
+
+    public void MakeActionOffer(Message message)
+    {
+        int newOffer = JsonConvert.DeserializeObject<int>(message.Objects[0].ToString());
+        if (HighestOffer < newOffer)
+        {
+            HighestOfferPlayer = GameState.Players.First(Player => Player.Name == message.Sender);
+            HighestOffer = newOffer;
+        }
+    }
+
+    public void AcceptOffer(Message message)
+    {
+        if (HighestOfferPlayer.MoneyCards.Aggregate((value, total) => total += value) >= HighestOffer)
+        {
+            if (HighestOfferPlayer == GameState.User)
+            {
+                ShowMoneySelectors = true;
+            }
+        }
+        else
+        {
+            HighestOffer = 0;
+            HighestOfferPlayer = null;
+            Disqwalified.Add(HighestOfferPlayer);
+            message.Objects.Add(HighestOfferPlayer);
+        }
+    }
+
+    public void StartCountdown()
+    {
+        CountdownTimer = 3;
+        Timer = new Timer(2000);
+        Timer.Elapsed += HandleTimer;
+        Timer.Start();
+    }
+
+    public void PayOffer(Message message)
+    {
+        List<int> payment = JsonConvert.DeserializeObject<List<int>>(message.Objects[0].ToString());
+
+        GameState.CurrentPlayer.MoneyCards.AddRange(payment);
+        if (GameState.CurrentPlayer == GameState.User) { GameState.User = GameState.CurrentPlayer; System.Diagnostics.Debug.WriteLine(GameState.User.Name + " is CurrentPlayer"); }
+        System.Diagnostics.Debug.WriteLine(TotalAmoutOfMoney + " amount of money");
+
+        Player winningPlayer = GameState.Players.First(player => player.Name == message.Sender);
+        winningPlayer.MoneyCards = SubtractListFromList(winningPlayer.MoneyCards, payment);
+        //winningPlayer.MoneyCards = winningPlayer.MoneyCards.Except(payment).ToList();
+        winningPlayer.AnimalCards.Add(AuctionedAnimalCard);
+        if (winningPlayer == GameState.User) { GameState.User = winningPlayer; System.Diagnostics.Debug.WriteLine(GameState.User.Name + " is winningPlayer"); }
+        System.Diagnostics.Debug.WriteLine(TotalAmoutOfMoney + " amount of money");
+
+        AuctionedAnimalCard = null;
+        HighestOffer = 0;
+        HighestOfferPlayer = null;
+        ShowMoneySelectors = false;
+        ChosenMoneyCards.Clear();
+
+        if (GameState.CurrentPlayer.Name == GameState.User.Name)
+        {
+            NextPlayer();
+        }
+    }
+
+    public List<int> SubtractListFromList (List<int> listA, List<int> listB)
+    {
+        foreach (int number in listB)
+        {
+            if (listA.Contains(number))
+            {
+                listA.Remove(number);
+            }
+        }
+        return listA;
     }
 
     public async Task OnAuctionClick()
@@ -121,7 +227,7 @@ else if (AuctionedAnimalCard != null && GameState.User != GameState.CurrentPlaye
 
     public async Task OnAcceptOffer()
     {
-        if (HighestOfferPlayer.MoneyCards.Aggregate((value, total) => total += value) <= HighestOffer)
+        if (HighestOfferPlayer.MoneyCards.Aggregate((value, total) => total += value) >= HighestOffer)
         {
             await SendSimpleMessage(MessageType.AcceptAuctionOffer);
         }
@@ -140,14 +246,22 @@ else if (AuctionedAnimalCard != null && GameState.User != GameState.CurrentPlaye
         await SendMoneyCards(MessageType.RightOfSale, moneyCards);
     }
 
-    public async Task OnPayOffer(Player player, List<int> moneyCards)
+    public async Task OnPayOffer()
     {
-        await SendMoneyCards(MessageType.PayOffer, moneyCards);
+        OfferedMoneyCards = new List<int>();
+        foreach (KeyValuePair<int, int> money in ChosenMoneyCards)
+        {
+            for (int x = 0; x < money.Value; x++)
+            {
+                OfferedMoneyCards.Add(money.Key);
+            }
+        }
+        await SendMoneyCards(MessageType.PayOffer, OfferedMoneyCards);
     }
 
     public async Task SendMoneyCards(MessageType messageType, List<int> moneyCards)
     {
-        GameState.User.MoneyCards = GameState.User.MoneyCards.Except(moneyCards).ToList();
+        //GameState.User.MoneyCards = GameState.User.MoneyCards.Except(moneyCards).ToList();
         Message message = new Message() { MessageType = messageType, Sender = GameState.User.Name };
         message.Objects.Add(moneyCards);
         await gameConnection.HubConnection.SendAsync("SendMessage", message);
@@ -159,4 +273,22 @@ else if (AuctionedAnimalCard != null && GameState.User != GameState.CurrentPlaye
         await gameConnection.HubConnection.SendAsync("SendMessage", message);
     }
 
+    public async Task NextPlayer()
+    {
+        Message message = new Message() { MessageType = MessageType.NextPlayer, Sender = GameState.User.Name };
+        if (GameState.Players.Any(player => !GameState.PlayerOrder.Contains(player.Name)))
+        {
+            List<Player> NotChosenPlayers = GameState.Players.Where(player => !GameState.PlayerOrder.Contains(player.Name)).ToList();
+            Random random = new Random();
+            Player chosenPlayer = NotChosenPlayers[random.Next(0, NotChosenPlayers.Count())];
+            message.Objects.Add(chosenPlayer.Name);
+        }
+        else
+        {
+            int index = GameState.PlayerOrder.FindIndex(player => player == GameState.CurrentPlayer.Name);
+            message.Objects.Add(GameState.PlayerOrder[index == GameState.PlayerOrder.Count() - 1 ? 0 : index]);
+
+        }
+        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
 }
