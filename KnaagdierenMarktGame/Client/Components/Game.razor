@@ -28,7 +28,13 @@ else if (gameState.CurrentState == Enums.States.Trade)
 {
     <EndScreen />
 }
-<PlayerAnimalCardsOverview AnimalCards="gameState.User.AnimalCards"/>
+@foreach (Player player in gameState.Players)
+{
+    <p>@player.Name</p>
+    <PlayerAnimalCardsOverview AnimalCards="player.AnimalCards" />
+}
+<p>PLAYER TOTAL</p>
+<PlayerAnimalCardsOverview AnimalCards="gameState.User.AnimalCards" />
 
 @code
 {
@@ -50,8 +56,18 @@ else if (gameState.CurrentState == Enums.States.Trade)
             case MessageType.Auction: gameState.CurrentState = Enums.States.Auction; break;
             case MessageType.Trade: gameState.CurrentState = Enums.States.Trade; break;
             case MessageType.None: gameState.CurrentState = Enums.States.None; break;
+            case MessageType.NextPlayer: OnNextPlayer(message); break;
         }
         StateHasChanged();
+    }
+
+    public void OnNextPlayer(Message message)
+    {
+        gameState.CurrentPlayer = gameState.Players.First(player => player.Name == message.Objects[0].ToString());
+        if (!gameState.PlayerOrder.Contains(gameState.CurrentPlayer.Name))
+        {
+            gameState.PlayerOrder.Add(gameState.CurrentPlayer.Name);
+        }
     }
 
     public async Task UpdateScreen(object ob) => StateHasChanged();

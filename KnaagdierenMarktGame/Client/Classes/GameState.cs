@@ -101,7 +101,7 @@ namespace KnaagdierenMarktGame.Client.Classes
             else
             {
                 int index = PlayerOrder.FindIndex(player => player == CurrentPlayer.Name);
-                message.Objects.Add(PlayerOrder[index == PlayerOrder.Count() - 1 ? 0 : index]);
+                message.Objects.Add(PlayerOrder[index == PlayerOrder.Count() - 1 ? 0 : index + 1]);
             }
             await gameConnection.HubConnection.SendAsync("SendMessage", message);
         }

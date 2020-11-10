@@ -10,22 +10,25 @@
 <h3>Auction</h3>
 @if (gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer)
 {
-    <button @onclick="OnAuctionClick">Auction</button>
-    @if (AuctionedAnimalCard != null)
+    if (AuctionedAnimalCard == null)
+    {
+        <button @onclick="OnAuctionClick">Auction</button>
+    }
+    @if (AuctionedAnimalCard != null && CountdownTimer == -1)
     {
         <button @onclick="BeginCountdown">Begin Countdown</button>
     }
-    @if (HighestOffer > 0 && CountdownTimer == 0)
+    @if (HighestOffer > 0 && CountdownTimer == 0 && !ShowMoneySelectors)
     {
         <button @onclick="OnAcceptOffer">Accept Offer</button>
-        @*<button @onclick="OnRightOfSale">Right of Sale</button>*@
+        <button @onclick="OnRightOfSale" disabled="@(TotalAmoutOfMoney < HighestOffer )">Right of Sale</button>
     }
 }
 else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlayer)
 {
     <div class="form-group">
         <label>
-            Group:
+            Offer:
             <input @bind="UserOffer" @bind:event="oninput" size="50" step="10" />
         </label>
     </div>
@@ -48,10 +51,7 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
     if (ShowMoneySelectors)
     {
         <MoneySelectors MoneyCards="@gameState.User.MoneyCards" @bind-ChosenMoneyCards="ChosenMoneyCards" />
-        foreach (KeyValuePair<int, int> a in ChosenMoneyCards)
-        {
-            <p>@a.Key ... @a.Value</p>
-        }
+        <p>Total amount: @ChosenMoneyCards.Sum(a => (a.Key * a.Value))</p>
         if (MatchesOffer)
         {
             <button @onclick="OnPayOffer">Pay</button>
@@ -81,7 +81,7 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
 
     public Dictionary<int, int> ChosenMoneyCards = new Dictionary<int, int>();
 
-    public int CountdownTimer { get; set; } = 0;
+    public int CountdownTimer { get; set; } = -1;
 
     public Timer Timer { get; set; }
 
@@ -108,8 +108,7 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
             case MessageType.AcceptAuctionOffer: AcceptOffer(message); break;
             case MessageType.PayOffer: PayOffer(message); break;
             case MessageType.PulledAuctionCard: await PulledActionCard(message); break;
-            case MessageType.NextPlayer: gameState.CurrentPlayer = gameState.Players.First(player => player.Name == message.Objects[0].ToString()); break;
-            case MessageType.RightOfSale: break;
+            case MessageType.FailedOffer: break;
         }
         StateHasChanged();
     }
@@ -133,7 +132,32 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
     {
         AuctionedAnimalCard = JsonConvert.DeserializeObject<AnimalCard>(message.Objects[0].ToString());
         gameState.RemainingAuctionCards.Remove(AuctionedAnimalCard);
-        //gameState.CurrentState = Enums.States.Auction;
+        if (AuctionedAnimalCard.AnimalType == Enums.AnimalTypes.Ezel)
+        {
+            DunkeyRule();
+        }
+    }
+
+    public void DunkeyRule()
+    {
+        switch (AmountOfAnimalTypeCardInOwned(Enums.AnimalTypes.Ezel))
+        {
+            case 0: AddMoneyCardToAllPlayers(50); break;
+            case 1: AddMoneyCardToAllPlayers(100); break;
+            case 2: AddMoneyCardToAllPlayers(200); break;
+            case 3: AddMoneyCardToAllPlayers(500); break;
+        }
+    }
+
+    public int AmountOfAnimalTypeCardInOwned(Enums.AnimalTypes animalType) =>
+        gameState.Players.Sum(player => player.AnimalCards.Count(animalCard => animalCard.AnimalType == animalType));
+
+    public void AddMoneyCardToAllPlayers(int value)
+    {
+        foreach (Player player in gameState.Players)
+        {
+            player.MoneyCards.Add(value);
+        }
     }
 
     public void MakeActionOffer(Message message)
@@ -176,7 +200,7 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
     {
         List<int> payment = JsonConvert.DeserializeObject<List<int>>(message.Objects[0].ToString());
 
-        UpdatePlayersMoneyCards(payment, message.Sender);
+        HandleSoldAuctionCard(payment, message.Sender);
         ResetAuction();
 
         if (gameState.CurrentPlayer.Name == gameState.User.Name)
@@ -186,15 +210,26 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
         gameState.CurrentState = Enums.States.None;
     }
 
-    public void UpdatePlayersMoneyCards(List<int> payment, string sender)
+    public void HandleSoldAuctionCard(List<int> payment, string sender)
     {
-        gameState.CurrentPlayer.MoneyCards.AddRange(payment);
-        if (gameState.CurrentPlayer == gameState.User) { gameState.User = gameState.CurrentPlayer; }
+        if (sender == gameState.CurrentPlayer.Name)
+        {
+            UpdatePlayerCards(payment, HighestOfferPlayer, gameState.CurrentPlayer);
+        }
+        else if (sender == HighestOfferPlayer.Name)
+        {
+            UpdatePlayerCards(payment, gameState.CurrentPlayer, gameState.Players.First(player => player.Name == sender));
+        }
+    }
 
-        Player winningPlayer = gameState.Players.First(player => player.Name == sender);
-        winningPlayer.MoneyCards = SubtractListFromList(winningPlayer.MoneyCards, payment);
-        winningPlayer.AnimalCards.Add(AuctionedAnimalCard);
-        if (winningPlayer == gameState.User) { gameState.User = winningPlayer; }
+    public void UpdatePlayerCards(List<int> payment, Player moneyReceiver, Player animalcardReceiver)
+    {
+        moneyReceiver.MoneyCards.AddRange(payment);
+        if (moneyReceiver == gameState.User) { gameState.User = moneyReceiver; }
+
+        animalcardReceiver.MoneyCards = SubtractListFromList(animalcardReceiver.MoneyCards, payment);
+        animalcardReceiver.AnimalCards.Add(AuctionedAnimalCard);
+        if (animalcardReceiver == gameState.User) { gameState.User = animalcardReceiver; }
     }
 
     //mogelijk niet meer nodig
@@ -256,9 +291,9 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
         }
     }
 
-    public async Task OnRightOfSale(Player player, List<int> moneyCards)
+    public void OnRightOfSale()
     {
-        await SendMoneyCards(MessageType.RightOfSale, moneyCards);
+        ShowMoneySelectors = true;
     }
 
     public async Task OnPayOffer()
@@ -276,7 +311,6 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
 
     public async Task SendMoneyCards(MessageType messageType, List<int> moneyCards)
     {
-        //GameState.User.MoneyCards = GameState.User.MoneyCards.Except(moneyCards).ToList();
         Message message = new Message() { MessageType = messageType, Sender = gameState.User.Name };
         message.Objects.Add(moneyCards);
         await gameConnection.HubConnection.SendAsync("SendMessage", message);
@@ -293,23 +327,4 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
         gameConnection.OnNewNewMessage -= HandleMessage;
         gameState.OnPropertyChanged -= UpdateScreen;
     }
-
-    //public async Task NextPlayer()
-    //{
-    //    Message message = new Message() { MessageType = MessageType.NextPlayer, Sender = gameState.User.Name };
-    //    if (gameState.Players.Any(player => !gameState.PlayerOrder.Contains(player.Name)))
-    //    {
-    //        List<Player> NotChosenPlayers = gameState.Players.Where(player => !gameState.PlayerOrder.Contains(player.Name)).ToList();
-    //        Random random = new Random();
-    //        Player chosenPlayer = NotChosenPlayers[random.Next(0, NotChosenPlayers.Count())];
-    //        message.Objects.Add(chosenPlayer.Name);
-    //    }
-    //    else
-    //    {
-    //        int index = gameState.PlayerOrder.FindIndex(player => player == gameState.CurrentPlayer.Name);
-    //        message.Objects.Add(gameState.PlayerOrder[index == gameState.PlayerOrder.Count() - 1 ? 0 : index]);
-
-    //    }
-    //    await gameConnection.HubConnection.SendAsync("SendMessage", message);
-    //}
 }
