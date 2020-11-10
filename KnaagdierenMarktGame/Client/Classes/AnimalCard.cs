@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace KnaagdierenMarktGame.Client.Classes
 {
-    public class AnimalCard
+    public class AnimalCard : IEquatable<AnimalCard>
     {
         public AnimalTypes AnimalType { get; set; }
 
@@ -17,6 +17,10 @@ namespace KnaagdierenMarktGame.Client.Classes
             AnimalType = animal;
             Value = value;
         }
-
+        public bool Equals(AnimalCard other)
+        {
+            if (other == null) return false;
+            return (AnimalType.Equals(other.AnimalType));
+        }
     }
 }

@@ -6,7 +6,7 @@ namespace KnaagdierenMarktGame.Shared
 {
     public enum MessageType
     {
-        GroupChanged, InitGroups, LeavedGroup, GroupDeleted, StartGame, NextPlayer,
+        GroupChanged, InitGroups, LeavedGroup, GroupDeleted, StartGame, NextPlayer, Auction, Trade, None,
         PulledAuctionCard, BeginCountdown, MakeAuctionOffer, AcceptAuctionOffer, RightOfSale, FailedOffer, PayOffer
     }
 }

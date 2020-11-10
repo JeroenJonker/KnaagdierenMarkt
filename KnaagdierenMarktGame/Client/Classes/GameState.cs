@@ -1,6 +1,10 @@
 ﻿using KnaagdierenMarktGame.Client.Enums;
+using KnaagdierenMarktGame.Shared;
+using Microsoft.AspNetCore.SignalR.Client;
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,7 +16,10 @@ namespace KnaagdierenMarktGame.Client.Classes
         public delegate Task PropertyChanged(object message);
 
         public event PropertyChanged OnPropertyChanged;
-        public List<AnimalCard> RemainingAuctionCards { get; set; } = new List<AnimalCard>();
+
+        public ObservableCollection<AnimalCard> RemainingAuctionCards { get; set; } = new ObservableCollection<AnimalCard>();
+
+        //public ObservableCollection<AnimalCard> RemainingAuctionCards { get; set; } = new ObservableCollection<AnimalCard>();
         public List<Player> Players { get; set; } = new List<Player>();
         public List<string> PlayerOrder { get; set; } = new List<string>();
 
@@ -30,6 +37,8 @@ namespace KnaagdierenMarktGame.Client.Classes
             get { return currentPlayer; }
             set { currentPlayer = value; OnPropertyChanged?.Invoke(CurrentPlayer); }
         }
+
+        public States CurrentState { get; set; } = States.None;
         public Timer InactivityTimer { get; set; }
 
         public void TestMessage()
@@ -37,14 +46,22 @@ namespace KnaagdierenMarktGame.Client.Classes
             System.Diagnostics.Debug.WriteLine("GameStateTest");
         }
 
+        private readonly GameConnection gameConnection;
+
+        public GameState(GameConnection _gameConnection)
+        {
+            gameConnection = _gameConnection;
+        }
+
         public void GameSetup(string userName, List<string> playerNames, string startPlayer)
         {
+            RemainingAuctionCards.CollectionChanged += (object sender, NotifyCollectionChangedEventArgs e) => OnPropertyChanged?.Invoke(RemainingAuctionCards);
             SetupPlayers(playerNames);
             CurrentPlayer = Players.First(player => player.Name == startPlayer);
             User = Players.First(player => player.Name == userName);
             SetupAuctionCards();
             PlayerOrder.Add(CurrentPlayer.Name);
-            OnPropertyChanged?.Invoke(CurrentPlayer);
+            //OnPropertyChanged?.Invoke(CurrentPlayer);
         }
 
         private void SetupAuctionCards()
@@ -71,8 +88,22 @@ namespace KnaagdierenMarktGame.Client.Classes
             }
         }
 
-
-
-
+        public async Task NextPlayer()
+        {
+            Message message = new Message() { MessageType = MessageType.NextPlayer, Sender = User.Name };
+            if (Players.Any(player => !PlayerOrder.Contains(player.Name)))
+            {
+                List<Player> NotChosenPlayers = Players.Where(player => !PlayerOrder.Contains(player.Name)).ToList();
+                Random random = new Random();
+                Player chosenPlayer = NotChosenPlayers[random.Next(0, NotChosenPlayers.Count())];
+                message.Objects.Add(chosenPlayer.Name);
+            }
+            else
+            {
+                int index = PlayerOrder.FindIndex(player => player == CurrentPlayer.Name);
+                message.Objects.Add(PlayerOrder[index == PlayerOrder.Count() - 1 ? 0 : index]);
+            }
+            await gameConnection.HubConnection.SendAsync("SendMessage", message);
+        }
     }
 }

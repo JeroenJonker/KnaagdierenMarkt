@@ -1,0 +1,14 @@
+﻿@using KnaagdierenMarktGame.Client.Classes
+
+<h3>PlayerAnimalCardsOverview</h3>
+
+@foreach (var animalCardGroup in AnimalCards.GroupBy(AnimalCard => AnimalCard.AnimalType))
+{
+    <p>Animal: @animalCardGroup.Key.ToString()</p>
+    <p>Amount: @animalCardGroup.Count().ToString() / 4</p>
+}
+
+@code {
+    [Parameter]
+    public List<AnimalCard> AnimalCards { get; set; }
+}

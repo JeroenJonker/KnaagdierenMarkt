@@ -1,6 +1,83 @@
-﻿<h3>Game</h3>
-<Auction/>
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@using KnaagdierenMarktGame.Shared
+@using KnaagdierenMarktGame.Client.Classes
+@inject GameState gameState
+@inject GameConnection gameConnection
 
-@code {
+<p>@gameState.RemainingAuctionCards.Count().ToString()</p>
+@if (gameState.CurrentState == Enums.States.None && gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer)
+{
+    @if (gameState.RemainingAuctionCards.Count() > 0)
+    {
+        <button @onclick="OnAuctionClick">Auction</button>
+    }
+    @if (CanTrade)
+    {
+        <button @onclick="OnTradeClick">Trade</button>
+    }
+}
+@if (gameState.CurrentState == Enums.States.Auction)
+{
+    <Auction />
+}
+else if (gameState.CurrentState == Enums.States.Trade)
+{
+    <TradeView />
+}
+@if (IsEndOfGame)
+{
+    <EndScreen />
+}
+<PlayerAnimalCardsOverview AnimalCards="gameState.User.AnimalCards"/>
 
+@code
+{
+    public bool ChoiceMade { get; set; }
+    public bool CanTrade => CanPlayerTradeAnimalCards(gameState.User);
+    public bool IsEndOfGame => !gameState.Players.Any(player => CanPlayerTradeAnimalCards(player)) && gameState.RemainingAuctionCards.Count() < 1;
+
+    protected override void OnInitialized()
+    {
+        gameState.OnPropertyChanged += UpdateScreen;
+        gameConnection.OnNewNewMessage += HandleMessage;
+        base.OnInitialized();
+    }
+
+    protected async Task HandleMessage(Message message)
+    {
+        switch (message.MessageType)
+        {
+            case MessageType.Auction: gameState.CurrentState = Enums.States.Auction; break;
+            case MessageType.Trade: gameState.CurrentState = Enums.States.Trade; break;
+            case MessageType.None: gameState.CurrentState = Enums.States.None; break;
+        }
+        StateHasChanged();
+    }
+
+    public async Task UpdateScreen(object ob) => StateHasChanged();
+
+    public async Task OnAuctionClick()
+    {
+        Message message = new Message() { MessageType = MessageType.Auction, Sender = gameState.User.Name };
+        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
+
+    public async Task OnTradeClick()
+    {
+        Message message = new Message() { MessageType = MessageType.Trade, Sender = gameState.User.Name };
+        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
+
+    public bool CanPlayerTradeAnimalCards(Player player)
+    {
+        foreach (AnimalCard card in player.AnimalCards)
+        {
+            // zijn er nog kaarten over die geen kwartet zijn?
+            if (player.AnimalCards.Count(animalCard => animalCard.AnimalType == card.AnimalType) < 4)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
 }
