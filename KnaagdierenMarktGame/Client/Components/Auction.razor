@@ -5,6 +5,8 @@
 @using System.Timers
 @inject GameConnection gameConnection
 @inject GameState gameState
+@implements IDisposable
+
 <h3>Auction</h3>
 @if (gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer)
 {
@@ -83,9 +85,6 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
 
     public Timer Timer { get; set; }
 
-
-    public int TestCounter { get; set; } = 0;
-
     protected override void OnInitialized()
     {
         gameConnection.OnNewNewMessage += HandleMessage;
@@ -102,8 +101,6 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
 
     protected async Task HandleMessage(Message message)
     {
-        TestCounter++;
-        Console.WriteLine("FROM HANDLEMESSAGE" + TestCounter);
         switch (message.MessageType)
         {
             case MessageType.BeginCountdown: StartCountdown(); break;
@@ -112,7 +109,7 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
             case MessageType.PayOffer: PayOffer(message); break;
             case MessageType.PulledAuctionCard: await PulledActionCard(message); break;
             case MessageType.NextPlayer: gameState.CurrentPlayer = gameState.Players.First(player => player.Name == message.Objects[0].ToString()); break;
-            case MessageType.RightOfSale:  break;
+            case MessageType.RightOfSale: break;
         }
         StateHasChanged();
     }
@@ -135,9 +132,7 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
     public async Task PulledActionCard(Message message)
     {
         AuctionedAnimalCard = JsonConvert.DeserializeObject<AnimalCard>(message.Objects[0].ToString());
-        System.Diagnostics.Debug.WriteLine("BEFORE Amount of cards: " + gameState.RemainingAuctionCards.Count());
-        //gameState.RemainingAuctionCards.Remove(AuctionedAnimalCard);
-        System.Diagnostics.Debug.WriteLine("AFTER Amount of cards: " + gameState.RemainingAuctionCards.Count());
+        gameState.RemainingAuctionCards.Remove(AuctionedAnimalCard);
         //gameState.CurrentState = Enums.States.Auction;
     }
 
@@ -202,6 +197,7 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
         if (winningPlayer == gameState.User) { gameState.User = winningPlayer; }
     }
 
+    //mogelijk niet meer nodig
     public void ResetAuction()
     {
         AuctionedAnimalCard = null;
@@ -211,7 +207,7 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
         ChosenMoneyCards.Clear();
     }
 
-    public List<int> SubtractListFromList (List<int> listA, List<int> listB)
+    public List<int> SubtractListFromList(List<int> listA, List<int> listB)
     {
         foreach (int number in listB)
         {
@@ -227,8 +223,6 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
     {
         Random random = new Random();
         AuctionedAnimalCard = gameState.RemainingAuctionCards[random.Next(gameState.RemainingAuctionCards.Count())];
-        //GameState.RemainingAuctionCards.Remove(AuctionedAnimalCard);
-        //HighestOffer = 0;
         Message message = new Message() { MessageType = MessageType.PulledAuctionCard, Sender = gameState.User.Name };
         message.Objects.Add(AuctionedAnimalCard);
         await gameConnection.HubConnection.SendAsync("SendMessage", message);
@@ -292,6 +286,12 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
     {
         Message message = new Message() { MessageType = messageType, Sender = gameState.User.Name };
         await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
+
+    public void Dispose()
+    {
+        gameConnection.OnNewNewMessage -= HandleMessage;
+        gameState.OnPropertyChanged -= UpdateScreen;
     }
 
     //public async Task NextPlayer()
