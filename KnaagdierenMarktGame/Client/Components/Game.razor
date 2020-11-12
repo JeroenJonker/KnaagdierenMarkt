@@ -33,7 +33,7 @@ else if (gameState.CurrentState == Enums.States.Trade)
     <p>@player.Name</p>
     <PlayerAnimalCardsOverview AnimalCards="player.AnimalCards" />
 }
-<p>PLAYER TOTAL</p>
+<p>User TOTAL</p>
 <PlayerAnimalCardsOverview AnimalCards="gameState.User.AnimalCards" />
 
 @code
@@ -45,7 +45,7 @@ else if (gameState.CurrentState == Enums.States.Trade)
     protected override void OnInitialized()
     {
         gameState.OnPropertyChanged += UpdateScreen;
-        gameConnection.OnNewNewMessage += HandleMessage;
+        gameConnection.OnNewGameMessage += HandleMessage;
         base.OnInitialized();
     }
 

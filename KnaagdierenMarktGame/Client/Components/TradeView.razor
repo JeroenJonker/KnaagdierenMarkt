@@ -1,5 +1,206 @@
-﻿<h3>TradeView</h3>
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@using KnaagdierenMarktGame.Shared
+@using KnaagdierenMarktGame.Client.Classes
+@using Newtonsoft.Json
+@implements IDisposable
+
+@inject GameState gameState
+@inject GameConnection gameConnection
+
+<h3>TradeView</h3>
+@if (ChosenAnimalCard == null && gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer)
+{
+    @foreach (Player player in gameState.Players)
+    {
+        @if (player.Name != gameState.User.Name && GetTradeAbleAnimalCards(player) is List<AnimalCard> tradeAbleCards && tradeAbleCards.Count() > 0)
+        {
+            <p>@player.Name</p>
+            @foreach (AnimalCard animalCard in tradeAbleCards)
+            {
+                <button @onclick="() => BuyOverAnimalCard(player, animalCard)">@animalCard.AnimalType.ToString():@animalCard.Value</button>
+            }
+        }
+    }
+}
+
+@if (ChosenAnimalCard != null)
+{
+    <p>Chosen card:</p>
+    <p>@ChosenAnimalCard.AnimalType</p>
+    <p>From:</p>
+    <p>@ChosenPlayer.Name</p>
+}
+
+@if (ShowMoneySelectors)
+{
+    <MoneySelectors MoneyCards="@gameState.User.MoneyCards" @bind-ChosenMoneyCards="ChosenMoneyCards" />
+    <p>Total amount of money: @ChosenMoneyCards.Sum(a => (a.Key * a.Value))</p>
+    <p>Total amount of cards: @ChosenMoneyCards.Count()</p>
+    if (ChosenMoneyCards.Count() > 0 && (gameState.CurrentPlayer.Name == gameState.User.Name || CurrentPlayerOfferedMoneyCards.Count() > 0))
+    {
+        <button @onclick="BuyOverOffer">Pay</button>
+    }
+}
+
 
 @code {
+    public bool ShowMoneySelectors { get; set; } = false;
+    public Dictionary<int, int> ChosenMoneyCards = new Dictionary<int, int>();
+    public AnimalCard ChosenAnimalCard { get; set; }
+    public Player ChosenPlayer { get; set; }
+    public List<int> ChosenPlayerOfferedMoneyCards { get; set; } = new List<int>();
+    public List<int> CurrentPlayerOfferedMoneyCards { get; set; } = new List<int>();
+
+    public bool HasUserSameAnimalCard(AnimalCard animalCard) => gameState.User.AnimalCards.Any(animalcard => animalcard.AnimalType == animalCard.AnimalType);
+
+    public List<AnimalCard> GetTradeAbleAnimalCards(Player player) => player.AnimalCards.Where(AnimalCard => HasUserSameAnimalCard(AnimalCard)).ToList();
+
+    protected override void OnInitialized()
+    {
+        gameConnection.OnNewGameMessage += HandleMessage;
+        gameState.OnPropertyChanged += UpdateScreen;
+        base.OnInitialized();
+    }
+
+    public async Task UpdateScreen(object ob) => StateHasChanged();
+
+    protected async Task HandleMessage(Message message)
+    {
+        switch (message.MessageType)
+        {
+            case MessageType.BuyOutOffer: OnBuyOutOffer(message); break;
+            case MessageType.BuyOutCard: OnBuyOutCard(message); break;
+            case MessageType.BuyOutResult: OnBuyOutResult(message); break;
+        }
+        StateHasChanged();
+    }
+
+    public void OnBuyOutResult(Message message)
+    {
+        string winner = message.Objects[0].ToString();
+        if (gameState.CurrentPlayer.Name == winner)
+        {
+            UpdatePlayersCards(gameState.CurrentPlayer, ChosenPlayer, CurrentPlayerOfferedMoneyCards);
+        }
+        else if (ChosenPlayer.Name == winner)
+        {
+            UpdatePlayersCards(ChosenPlayer, gameState.CurrentPlayer, ChosenPlayerOfferedMoneyCards);
+        }
+        else
+        {
+            //bij gelijk spel...
+        }
+        gameState.NextPlayer();
+        gameState.CurrentState = Enums.States.None;
+    }
+
+    public void UpdatePlayersCards(Player winningPlayer, Player losingPlayer, List<int> winningMoneyCards)
+    {
+        if (winningPlayer.AnimalCards.Sum(animalCard => animalCard.AnimalType == ChosenAnimalCard.AnimalType ? 1 : 0) == 2 &&
+            losingPlayer.AnimalCards.Sum(animalCard => animalCard.AnimalType == ChosenAnimalCard.AnimalType ? 1 : 0) == 2)
+        {
+            winningPlayer.AnimalCards.Add(ChosenAnimalCard);
+            losingPlayer.AnimalCards.Remove(ChosenAnimalCard);
+        }
+        winningPlayer.AnimalCards.Add(ChosenAnimalCard);
+        losingPlayer.AnimalCards.Remove(ChosenAnimalCard);
+
+        ChosenPlayer.MoneyCards = SubtractListFromList(winningPlayer.MoneyCards, ChosenPlayerOfferedMoneyCards);
+        ChosenPlayer.MoneyCards.AddRange(CurrentPlayerOfferedMoneyCards);
+        gameState.CurrentPlayer.MoneyCards = SubtractListFromList(winningPlayer.MoneyCards, CurrentPlayerOfferedMoneyCards);
+        gameState.CurrentPlayer.MoneyCards.AddRange(ChosenPlayerOfferedMoneyCards);
+
+    }
+
+    public List<int> SubtractListFromList(List<int> listA, List<int> listB)
+    {
+        foreach (int number in listB)
+        {
+            if (listA.Contains(number))
+            {
+                listA.Remove(number);
+            }
+        }
+        return listA;
+    }
+
+    public void OnBuyOutCard(Message message)
+    {
+        ChosenAnimalCard = JsonConvert.DeserializeObject<AnimalCard>(message.Objects[0].ToString());
+        ChosenPlayer = gameState.Players.First(player => player.Name == message.Target);
+        if (ChosenPlayer.Name == gameState.User.Name)
+        {
+            ShowMoneySelectors = true;
+        }
+    }
+
+    public void OnBuyOutOffer(Message message)
+    {
+        if (message.Sender == ChosenPlayer.Name)
+        {
+            ChosenPlayerOfferedMoneyCards = JsonConvert.DeserializeObject<List<int>>(message.Objects[0].ToString());
+        }
+        else
+        {
+            CurrentPlayerOfferedMoneyCards = JsonConvert.DeserializeObject<List<int>>(message.Objects[0].ToString());
+        }
+        if (gameState.User.Name == gameState.CurrentPlayer.Name && message.Target == gameState.User.Name)
+        {
+            DetermineResult();
+        }
+    }
+
+    public async Task DetermineResult()
+    {
+        Message message = new Message() { MessageType = MessageType.BuyOutResult, Sender = gameState.User.Name, Target = ChosenPlayer.Name };
+        if (CurrentPlayerOfferedMoneyCards.Sum() > ChosenPlayerOfferedMoneyCards.Sum())
+        {
+            message.Objects.Add(gameState.CurrentPlayer.Name);
+        }
+        else if (CurrentPlayerOfferedMoneyCards.Sum() < ChosenPlayerOfferedMoneyCards.Sum())
+        {
+            message.Objects.Add(ChosenPlayer.Name);
+        }
+        else if (CurrentPlayerOfferedMoneyCards.Sum() == ChosenPlayerOfferedMoneyCards.Sum())
+        {
+            message.Objects.Add("");
+        }
+        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
+
+    public async Task BuyOverAnimalCard(Player player, AnimalCard animalCard)
+    {
+        //ChosenAnimalCard = animalCard;
+        //ChosenPlayer = player;
+        ShowMoneySelectors = true;
+
+        // heeft speler van wie de kaart wordt gekocht nodig
+        Message message = new Message() { MessageType = MessageType.BuyOutCard, Sender = gameState.User.Name, Target = player.Name };
+        message.Objects.Add(animalCard);
+        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
+
+    public async Task BuyOverOffer()
+    {
+        // alles gelijk oversturen of eerst de hoeveelheid?
+        List<int> offeredMoneyCards = new List<int>();
+        foreach (KeyValuePair<int, int> money in ChosenMoneyCards)
+        {
+            for (int x = 0; x < money.Value; x++)
+            {
+                offeredMoneyCards.Add(money.Key);
+            }
+        }
+        Message message = new Message() { MessageType = MessageType.BuyOutOffer, Sender = gameState.User.Name, Target = (gameState.User.Name == gameState.CurrentPlayer.Name ? ChosenPlayer.Name : gameState.CurrentPlayer.Name) };
+        message.Objects.Add(offeredMoneyCards);
+        ShowMoneySelectors = false;
+        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
+
+    public void Dispose()
+    {
+        gameConnection.OnNewGameMessage -= HandleMessage;
+        gameState.OnPropertyChanged -= UpdateScreen;
+    }
 
 }

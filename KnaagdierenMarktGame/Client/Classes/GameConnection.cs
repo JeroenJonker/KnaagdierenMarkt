@@ -16,9 +16,9 @@ namespace KnaagdierenMarktGame.Client.Classes
         public event NewMessage OnNewMessage;
 
         //temporary
-        public delegate Task NewNewMessage(Message message);
+        public delegate Task NewGameMessage(Message message);
 
-        public event NewNewMessage OnNewNewMessage;
+        public event NewGameMessage OnNewGameMessage;
 
         public GameConnection(Uri baseAdress)
         {
@@ -28,7 +28,7 @@ namespace KnaagdierenMarktGame.Client.Classes
 
             HubConnection.On<MessageType, object>("ReceiveMessage", (messageType, message) => OnNewMessage?.Invoke(messageType, message));
             //temporary
-            HubConnection.On<Message>("ReceiveGameMessage", (message) => OnNewNewMessage?.Invoke(message));
+            HubConnection.On<Message>("ReceiveGameMessage", (message) => OnNewGameMessage?.Invoke(message));
         }
 
         public async Task StartConnection()

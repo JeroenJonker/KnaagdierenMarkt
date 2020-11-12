@@ -1,5 +1,28 @@
-﻿<h3>EndScreen</h3>
+﻿@using KnaagdierenMarktGame.Shared
+@using KnaagdierenMarktGame.Client.Classes
+@inject GameState gameState
+
+<h3>EndScreen</h3>
+<p>Final score:</p>
+@foreach (KeyValuePair<Player, int> playerScore in PlayerScores.OrderBy(playerscore => playerscore.Value))
+{
+    <p>Player: @playerScore.Key.Name</p>
+    <p>Score: @playerScore.Value.ToString()</p>
+}
 
 @code {
 
+    public Dictionary<Player, int> PlayerScores { get { return GetPlayerScores(); } }
+
+    public Dictionary<Player, int> GetPlayerScores()
+    {
+        Dictionary<Player, int> PlayerScores = new Dictionary<Player, int>();
+        foreach (Player player in gameState.Players)
+        {
+            List<AnimalCard> differentAnimalCards = player.AnimalCards.Distinct().ToList();
+            int score = differentAnimalCards.Sum(AnimalCard => AnimalCard.Value) * differentAnimalCards.Count();
+            PlayerScores.Add(player, score);
+        }
+        return PlayerScores;
+    }
 }

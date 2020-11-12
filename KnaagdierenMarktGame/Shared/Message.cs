@@ -8,6 +8,7 @@ namespace KnaagdierenMarktGame.Shared
     {
         public MessageType MessageType { get; set; }
         public string Sender { get; set; }
+        public string Target { get; set; }
         public List<object> Objects { get; set; } = new List<object>();
 
     }

@@ -87,7 +87,7 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
 
     protected override void OnInitialized()
     {
-        gameConnection.OnNewNewMessage += HandleMessage;
+        gameConnection.OnNewGameMessage += HandleMessage;
         gameState.OnPropertyChanged += UpdateScreen;
         base.OnInitialized();
     }
@@ -324,7 +324,7 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
 
     public void Dispose()
     {
-        gameConnection.OnNewNewMessage -= HandleMessage;
+        gameConnection.OnNewGameMessage -= HandleMessage;
         gameState.OnPropertyChanged -= UpdateScreen;
     }
 }
