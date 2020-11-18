@@ -7,47 +7,48 @@
 @inject GameState gameState
 @implements IDisposable
 
-<h3>Auction</h3>
-@if (gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer)
-{
-    if (AuctionedAnimalCard == null)
+<div class="Component-header">
+    <h1>Auction</h1>
+    @if (CountdownTimer == -1 || (CountdownTimer == 0 && HighestOffer == 0))
     {
-        <button @onclick="OnAuctionClick">Auction</button>
+        <h5>Free bidding</h5>
+        <p>No timer set</p>
     }
-    @if (AuctionedAnimalCard != null && CountdownTimer == -1)
+    else if (CountdownTimer > -1)
     {
-        <button @onclick="BeginCountdown">Begin Countdown</button>
+        <h5>Remaining time</h5>
+        <p>@CountdownTimer seconds</p>
     }
-    @if (HighestOffer > 0 && CountdownTimer == 0 && !ShowMoneySelectors)
-    {
-        <button @onclick="OnAcceptOffer">Accept Offer</button>
-        <button @onclick="OnRightOfSale" disabled="@(TotalAmoutOfMoney < HighestOffer )">Right of Sale</button>
-    }
-}
-else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlayer)
-{
-    <div class="form-group">
-        <label>
-            Offer:
-            <input @bind="UserOffer" @bind:event="oninput" size="50" step="10" />
-        </label>
-    </div>
-    <button @onclick="OnMakeOffer" disabled="@(UserOffer <= HighestOffer)">Make offer</button>
-}
-<p>@TotalAmoutOfMoney</p>
+</div>
 @if (AuctionedAnimalCard != null)
 {
-    <label>New card</label>
-    <p>@AuctionedAnimalCard.AnimalType</p>
-    <p>@AuctionedAnimalCard.Value</p>
-    <label>Current offer</label>
-    <p>@HighestOffer</p>
-    if (HighestOfferPlayer != null)
-    {
-        <p>@HighestOfferPlayer.Name</p>
-    }
-    <label>Available Time</label>
-    <p>@CountdownTimer</p>
+    <div class="Auction-container">
+        <div class="Auction-item">
+            <h2 class="Auction-header">Biddings:</h2>
+            @if (HighestOffer == 0)
+            {
+                <p>$ 0</p>
+            }
+            else
+            {
+                <p>$ @HighestOffer @HighestOfferPlayer.Name</p>
+                @for (int x = 1; x < Offerings.Count() && x < 6; x++)
+                {
+                    <p>@Offerings[x]</p>
+                }
+            }
+            @if (gameState.User != gameState.CurrentPlayer && CountdownTimer != 0)
+            {
+                <input class="clean-input" @bind="UserOffer" @bind:event="oninput" size="50" step="10" />
+                <button @onclick="OnMakeOffer" disabled="@(UserOffer <= HighestOffer)">Make offer</button>
+            }
+        </div>
+        <div class="Auction-item">
+            <h2 class="Auction-header">@AuctionedAnimalCard.AnimalType</h2>
+            <h5>@AuctionedAnimalCard.Value</h5>
+            <img class="Auctioned-AnimalCard" src=@($"/Images/{AuctionedAnimalCard.AnimalType}.png") />
+        </div>
+    </div>
     if (ShowMoneySelectors)
     {
         <MoneySelectors MoneyCards="@gameState.User.MoneyCards" @bind-ChosenMoneyCards="ChosenMoneyCards" />
@@ -59,8 +60,30 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
     }
 }
 
+@if (gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer)
+{
+    <div class="Auction-CurrentPlayerButtons-container">
+    @if (AuctionedAnimalCard == null)
+    {
+        <button @onclick="OnAuctionClick">Auction</button>
+    }
+    @if (AuctionedAnimalCard != null && (CountdownTimer == -1 || HighestOffer == 0 ))
+    {
+        <button @onclick="BeginCountdown">Begin Countdown</button>
+    }
+    @if (HighestOffer > 0 && CountdownTimer == 0 && !ShowMoneySelectors)
+    {
+        <button @onclick="OnAcceptOffer">Accept Offer</button>
+        <button @onclick="OnRightOfSale" disabled="@(TotalAmoutOfMoney < HighestOffer )">Right of Sale</button>
+    }
+    </div>
+
+}
+
 
 @code {
+    public List<string> Offerings = new List<string>();
+
     public int HighestOffer { get; set; } = 0;
 
     public bool ShowMoneySelectors { get; set; } = false;
@@ -167,6 +190,8 @@ else if (AuctionedAnimalCard != null && gameState.User != gameState.CurrentPlaye
         {
             HighestOfferPlayer = gameState.Players.First(Player => Player.Name == message.Sender);
             HighestOffer = newOffer;
+            Offerings.Add($"$ {newOffer} {message.Sender}");
+            Offerings = Offerings.OrderByDescending(offerings => int.Parse(offerings.Split(' ')[1].ToString())).ToList();
         }
     }
 

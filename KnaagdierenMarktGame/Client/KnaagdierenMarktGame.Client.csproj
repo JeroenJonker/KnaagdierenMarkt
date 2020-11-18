@@ -18,4 +18,21 @@
     <ProjectReference Include="..\Shared\KnaagdierenMarktGame.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="wwwroot\Images\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="wwwroot\Images\ezel.png" />
+    <None Include="wwwroot\Images\gans.png" />
+    <None Include="wwwroot\Images\geit.png" />
+    <None Include="wwwroot\Images\hond.png" />
+    <None Include="wwwroot\Images\kat.png" />
+    <None Include="wwwroot\Images\kip.png" />
+    <None Include="wwwroot\Images\koe.png" />
+    <None Include="wwwroot\Images\paard.png" />
+    <None Include="wwwroot\Images\schaap.png" />
+    <None Include="wwwroot\Images\varken.png" />
+  </ItemGroup>
+
 </Project>

@@ -1,6 +1,85 @@
 ﻿@import url('open-iconic/font/css/open-iconic-bootstrap.min.css');
+@import url('https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Roboto&display=swap');
 
-html, body {
+.main {
+    width: 100%;
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.Component-header{
+    text-align: center;
+}
+
+.Auction-container {
+    display: grid;
+    grid-template-columns: auto auto;
+    justify-content: center;
+    column-gap: 4vw;
+    margin: 1vw;
+}
+
+    .Auction-container p {
+        font-family: 'Roboto', sans-serif;
+    }
+
+.Auction-header {
+    text-align: center;
+    font-weight: bold;
+    border-bottom: 1px solid black;
+    font-family: 'Indie Flower', cursive;
+}
+
+.Auction-CurrentPlayerButtons-container {
+    width: 100%;
+    display: inline-flex;
+    justify-content: center;
+    column-gap: 1vw;
+    width: 100%;
+}
+
+.clean-input {
+    width: 100px;
+    border: none;
+    border-bottom: black;
+    border-bottom: 1px solid gray;
+}
+
+.Auctioned-AnimalCard {
+    width: 50vw;
+    max-width: 375px;
+}
+
+.PlayerOverview-container {
+    margin: 1vw;
+}
+
+.PlayerOverview-header {
+    border-bottom: 1px solid black;
+}
+
+.PlayerAnimalCards-container {
+    display: inline-block;
+}
+
+.PlayerAnimalCard-container {
+    display: inline-grid;
+    grid-template-columns: auto auto;
+    column-gap: 0.5vw;
+    margin: 1.5vw;
+}
+
+.PlayerAnimalCards-item {
+}
+
+.LittleAnimalCard-image {
+    width: 100px;
+}
+
+/*html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
@@ -176,8 +255,9 @@ app {
         display: none;
     }
 
-    .sidebar .collapse {
+    .sidebar .collapse {*/
         /* Never collapse the sidebar for wide screens */
-        display: block;
+        /*display: block;
     }
-}
+}*/
+

@@ -8,11 +8,11 @@
 @inject GameConnection gameConnection
 @inject GameState gameState
 @implements IDisposable
-<p>@gameState.Players.Count</p>
-<p >@IsGameStarted()</p>
+@*<p>@gameState.Players.Count</p>
+<p >@IsGameStarted()</p>*@
 @if (gameState.User != null)
 {
-    <p>test</p>
+    @*<p>test</p>*@
     <Game/>
 }
 else

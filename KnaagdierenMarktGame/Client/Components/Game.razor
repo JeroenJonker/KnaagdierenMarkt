@@ -4,9 +4,9 @@
 @inject GameState gameState
 @inject GameConnection gameConnection
 
-<p>@gameState.RemainingAuctionCards.Count().ToString()</p>
 @if (gameState.CurrentState == Enums.States.None && gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer)
 {
+    <h1 class="Component-header">Choose an option</h1>
     @if (gameState.RemainingAuctionCards.Count() > 0)
     {
         <button @onclick="OnAuctionClick">Auction</button>
@@ -28,13 +28,21 @@ else if (gameState.CurrentState == Enums.States.Trade)
 {
     <EndScreen />
 }
-@foreach (Player player in gameState.Players)
-{
-    <p>@player.Name</p>
-    <PlayerAnimalCardsOverview AnimalCards="player.AnimalCards" />
-}
-<p>User TOTAL</p>
-<PlayerAnimalCardsOverview AnimalCards="gameState.User.AnimalCards" />
+<div class="PlayerOverview-container">
+    <h3 class="PlayerOverview-header">@gameState.User.Name</h3>
+    <p>$ @gameState.User.MoneyCards.Sum()</p>
+    <PlayerAnimalCardsOverview AnimalCards="gameState.User.AnimalCards" />
+    @foreach (Player player in gameState.Players)
+    {
+        if (player.Name != gameState.User.Name)
+        {
+            <h3>@player.Name</h3>
+            <PlayerAnimalCardsOverview AnimalCards="player.AnimalCards" />
+        }
+    }
+</div>
+
+<p>@gameState.RemainingAuctionCards.Count().ToString()</p>
 
 @code
 {

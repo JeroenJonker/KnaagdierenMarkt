@@ -1,12 +1,20 @@
 ﻿@using KnaagdierenMarktGame.Client.Classes
 
-<h3>PlayerAnimalCardsOverview</h3>
+@*<h3>PlayerAnimalCardsOverview</h3>*@
 
-@foreach (var animalCardGroup in AnimalCards.GroupBy(AnimalCard => AnimalCard.AnimalType))
-{
-    <p>Animal: @animalCardGroup.Key.ToString()</p>
-    <p>Amount: @animalCardGroup.Count().ToString() / 4</p>
-}
+<div class="PlayerAnimalCards-container">
+    @foreach (var animalCardGroup in AnimalCards.GroupBy(AnimalCard => AnimalCard.AnimalType))
+    {
+    <div class="PlayerAnimalCard-container">
+        <img class="PlayerAnimalCards-item LittleAnimalCard-image" src=@($"/Images/{animalCardGroup.Key.ToString()}.png") />
+        <div class="PlayerAnimalCards-item">
+            <h5>@animalCardGroup.Key</h5>
+            <p>@animalCardGroup.Count().ToString() / 4</p>
+        </div>
+    </div>
+    }
+</div>
+
 
 @code {
     [Parameter]
