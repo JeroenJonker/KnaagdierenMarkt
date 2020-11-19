@@ -79,6 +79,36 @@
     width: 100px;
 }
 
+.MoneySelectors-container {
+    text-align: center;
+    width: 90vw;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.MoneySelector-item {
+    display: grid;
+    grid-template-columns: 60px auto auto;
+    column-gap: 2vmin;
+}
+
+    .MoneySelector-item p {
+        margin: 0px;
+    }
+
+.AlignTextLeft{
+    text-align: left;
+}
+.AlignTextRight{
+    text-align:right;
+}
+
+.Underline {
+    border-bottom: 1px solid black;
+}
+
+
 /*html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }

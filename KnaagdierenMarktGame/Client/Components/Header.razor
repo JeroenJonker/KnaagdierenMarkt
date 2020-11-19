@@ -1,0 +1,47 @@
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@using KnaagdierenMarktGame.Shared
+@using KnaagdierenMarktGame.Client.Classes
+@using Newtonsoft.Json
+@inject GameConnection gameConnection
+@inject GameState gameState
+@implements IDisposable
+
+<div class="Component-header">
+
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        gameConnection.OnNewGameMessage += HandleMessage;
+        gameState.OnPropertyChanged += UpdateScreen;
+        base.OnInitialized();
+    }
+
+    public async Task UpdateScreen(object ob) => StateHasChanged();
+
+    protected override Task OnInitializedAsync()
+    {
+        return base.OnInitializedAsync();
+    }
+
+    protected async Task HandleMessage(Message message)
+    {
+        switch (message.MessageType)
+        {
+            case MessageType.BeginCountdown:  break;
+            case MessageType.MakeAuctionOffer:  break;
+            case MessageType.AcceptAuctionOffer:  break;
+            case MessageType.PayOffer:  break;
+            case MessageType.PulledAuctionCard:  break;
+            case MessageType.FailedOffer: break;
+        }
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        gameConnection.OnNewGameMessage -= HandleMessage;
+        gameState.OnPropertyChanged -= UpdateScreen;
+    }
+}

@@ -1,9 +1,8 @@
-﻿<h3>MoneySelector</h3>
-<h1>@MoneyCardAmount</h1>
-<div>
-    <div>@AmountLeft</div>
-    <input type="range" @bind="AmountOffered" @bind:event="oninput" max="@TotalAmount"/>
-    <div>@AmountOffered</div>
+﻿<h2>$@MoneyCardAmount</h2>
+<div class="MoneySelector-item">
+    <p class="AlignTextLeft">Left: @AmountLeft</p>
+    <input type="range" @bind="AmountOffered" @bind:event="oninput" max="@TotalAmount" />
+    <p class="AlignTextRight">@AmountOffered x $@MoneyCardAmount = $@(AmountOffered * MoneyCardAmount)</p>
 </div>
 
 @code {

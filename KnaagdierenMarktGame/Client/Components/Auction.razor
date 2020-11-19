@@ -20,7 +20,7 @@
         <p>@CountdownTimer seconds</p>
     }
 </div>
-@if (AuctionedAnimalCard != null)
+@if (AuctionedAnimalCard != null && !ShowMoneySelectors)
 {
     <div class="Auction-container">
         <div class="Auction-item">
@@ -49,35 +49,42 @@
             <img class="Auctioned-AnimalCard" src=@($"/Images/{AuctionedAnimalCard.AnimalType}.png") />
         </div>
     </div>
-    if (ShowMoneySelectors)
-    {
-        <MoneySelectors MoneyCards="@gameState.User.MoneyCards" @bind-ChosenMoneyCards="ChosenMoneyCards" />
-        <p>Total amount: @ChosenMoneyCards.Sum(a => (a.Key * a.Value))</p>
-        if (MatchesOffer)
-        {
-            <button @onclick="OnPayOffer">Pay</button>
-        }
-    }
 }
 
-@if (gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer)
+@if (gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer && !ShowMoneySelectors)
 {
     <div class="Auction-CurrentPlayerButtons-container">
-    @if (AuctionedAnimalCard == null)
-    {
-        <button @onclick="OnAuctionClick">Auction</button>
-    }
-    @if (AuctionedAnimalCard != null && (CountdownTimer == -1 || HighestOffer == 0 ))
-    {
-        <button @onclick="BeginCountdown">Begin Countdown</button>
-    }
-    @if (HighestOffer > 0 && CountdownTimer == 0 && !ShowMoneySelectors)
-    {
-        <button @onclick="OnAcceptOffer">Accept Offer</button>
-        <button @onclick="OnRightOfSale" disabled="@(TotalAmoutOfMoney < HighestOffer )">Right of Sale</button>
-    }
+        @if (AuctionedAnimalCard == null)
+        {
+            <button @onclick="OnAuctionClick">Auction</button>
+        }
+        @if (AuctionedAnimalCard != null && (CountdownTimer == -1 || HighestOffer == 0))
+        {
+            <button @onclick="BeginCountdown">Begin Countdown</button>
+        }
+        @if (HighestOffer > 0 && CountdownTimer == 0 && !ShowMoneySelectors)
+        {
+            <button @onclick="OnAcceptOffer">Accept Offer</button>
+            <button @onclick="OnRightOfSale" disabled="@(TotalAmoutOfMoney < HighestOffer )">Right of Sale</button>
+        }
     </div>
 
+}
+
+@if (ShowMoneySelectors)
+{
+<div class="MoneySelectors-container">
+    <MoneySelectors MoneyCards="@gameState.User.MoneyCards" @bind-ChosenMoneyCards="ChosenMoneyCards" />
+    <p class="AlignTextRight">Current total: $@gameState.User.MoneyCards.Sum()</p>
+    <p class="AlignTextRight Underline">Payment: -$@ChosenMoneyCards.Sum(a => (a.Key * a.Value))</p>
+    <p class="AlignTextRight">New Total: $@(gameState.User.MoneyCards.Sum() - ChosenMoneyCards.Sum(a => (a.Key * a.Value))) </p>
+    @if (MatchesOffer)
+    {
+        <div class="AlignTextRight">
+            <button @onclick="OnPayOffer">Pay</button>
+        </div>
+    }
+</div>
 }
 
 

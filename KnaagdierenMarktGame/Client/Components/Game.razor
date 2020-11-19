@@ -1,20 +1,29 @@
 ﻿@using Microsoft.AspNetCore.SignalR.Client
 @using KnaagdierenMarktGame.Shared
 @using KnaagdierenMarktGame.Client.Classes
+
 @inject GameState gameState
 @inject GameConnection gameConnection
 
 @if (gameState.CurrentState == Enums.States.None && gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer)
 {
     <h1 class="Component-header">Choose an option</h1>
-    @if (gameState.RemainingAuctionCards.Count() > 0)
-    {
-        <button @onclick="OnAuctionClick">Auction</button>
-    }
-    @if (CanTrade)
-    {
-        <button @onclick="OnTradeClick">Trade</button>
-    }
+    <div class="Auction-CurrentPlayerButtons-container">
+        @if (gameState.RemainingAuctionCards.Count() > 0)
+        {
+            <button @onclick="OnAuctionClick">Auction</button>
+        }
+        @if (CanTrade)
+        {
+            <button @onclick="OnTradeClick">Trade</button>
+        }
+    </div>
+}
+else
+{
+    <h1 class="Component-header">Waiting for a decision</h1>
+    <h5>@gameState.CurrentPlayer.Name is choosing</h5>
+    <p>May take some time</p>
 }
 @if (gameState.CurrentState == Enums.States.Auction)
 {
@@ -36,7 +45,7 @@ else if (gameState.CurrentState == Enums.States.Trade)
     {
         if (player.Name != gameState.User.Name)
         {
-            <h3>@player.Name</h3>
+            <h3 class="PlayerOverview-header">@player.Name</h3>
             <PlayerAnimalCardsOverview AnimalCards="player.AnimalCards" />
         }
     }

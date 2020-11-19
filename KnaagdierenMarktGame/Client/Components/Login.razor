@@ -4,6 +4,9 @@
 @inject GameConnection gameConnection
 @inject GameState gameState
 @using Newtonsoft.Json
+@using Microsoft.Extensions.Localization
+@using KnaagdierenMarktGame.Client.Resources
+@inject IStringLocalizer<TestResource> L
 
 <h1 class="Component-header">Login</h1>
 @if (string.IsNullOrEmpty(Group.Name))
@@ -57,6 +60,9 @@
         }
     </ul>
 }
+
+@*<p>@L["Test"]</p>
+<p>@L["Nogmaar1"]</p>*@
 
 @code {
     private List<Group> groups = new List<Group>();
