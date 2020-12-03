@@ -2,15 +2,27 @@
 @using KnaagdierenMarktGame.Shared
 @using KnaagdierenMarktGame.Client.Classes
 @using Newtonsoft.Json
+@using KnaagdierenMarktGame.Client.Resources
+@using Microsoft.Extensions.Localization
 @inject GameConnection gameConnection
 @inject GameState gameState
+
 @implements IDisposable
+@inject IStringLocalizer<TestResource> headerResources
 
 <div class="Component-header">
-
+    <h1 class="Component-header">@headerResources[$"{CurrentState.ToString()}_BigHeaderText"]</h1>
+    <h5>@headerResources[$"{CurrentState.ToString()}_SmallHeaderText"]</h5>
+    <p>@headerResources[$"{CurrentState.ToString()}_DescriptionText"]</p>
 </div>
 
 @code {
+
+    //public string BigHeaderText { get; set; }
+    //public string SmallHeaderText { get; set; }
+    //public string Description { get; set; }
+    public Enums.States CurrentState { get; set; }
+
     protected override void OnInitialized()
     {
         gameConnection.OnNewGameMessage += HandleMessage;
@@ -18,7 +30,7 @@
         base.OnInitialized();
     }
 
-    public async Task UpdateScreen(object ob) => StateHasChanged();
+    public async Task UpdateScreen(object ob) => CurrentState = gameState.CurrentState;
 
     protected override Task OnInitializedAsync()
     {
@@ -27,15 +39,16 @@
 
     protected async Task HandleMessage(Message message)
     {
-        switch (message.MessageType)
-        {
-            case MessageType.BeginCountdown:  break;
-            case MessageType.MakeAuctionOffer:  break;
-            case MessageType.AcceptAuctionOffer:  break;
-            case MessageType.PayOffer:  break;
-            case MessageType.PulledAuctionCard:  break;
-            case MessageType.FailedOffer: break;
-        }
+        //CurrentMessageType = message.MessageType;
+        //switch (message.MessageType)
+        //{
+        //    case MessageType.BeginCountdown: break;
+        //    case MessageType.MakeAuctionOffer: break;
+        //    case MessageType.AcceptAuctionOffer: break;
+        //    case MessageType.PayOffer: break;
+        //    case MessageType.PulledAuctionCard: break;
+        //    case MessageType.FailedOffer: break;
+        //}
         StateHasChanged();
     }
 

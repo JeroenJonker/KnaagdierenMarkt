@@ -38,7 +38,15 @@ namespace KnaagdierenMarktGame.Client.Classes
             set { currentPlayer = value; OnPropertyChanged?.Invoke(CurrentPlayer); }
         }
 
-        public States CurrentState { get; set; } = States.None;
+        private States currentState = States.None;
+
+        public States CurrentState
+        {
+            get { return currentState; }
+            set { currentState = value; OnPropertyChanged?.Invoke(CurrentState); }
+        }
+
+        //public States CurrentState { get; set; } = States.None;
         public Timer InactivityTimer { get; set; }
 
         public void TestMessage()

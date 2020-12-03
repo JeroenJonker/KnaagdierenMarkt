@@ -11,58 +11,53 @@
 <h1 class="Component-header">Login</h1>
 @if (string.IsNullOrEmpty(Group.Name))
 {
-    <div class="form-group">
+    <div class="form-group AlignTextCenter">
         <label>
             User:
-            <input @bind="UserName" @bind:event="oninput" required />
+            <input class="clean-input" @bind="UserName" @bind:event="oninput" required placeholder="username" />
         </label>
     </div>
 
     if (!string.IsNullOrEmpty(UserName) && !IsUserNameInUse())
     {
-        <div class="form-group">
-            <label>
-                Group:
-                <input @bind="GroupInput" @bind:event="oninput" size="50" />
-            </label>
+        <div class="GroupDecision-container">
+            <div class="CreateGroup-container form-group">
+                <h4>Make a group</h4>
+                <input class="clean-input" @bind="GroupInput" @bind:event="oninput" placeholder="groupname" />
+                <button @onclick="CreateGroup" disabled="@(!CanCreateGroup)">Create</button>
+            </div>
+            @*<button @onclick="Send" disabled="@(!IsConnected)">Send</button>
+                <button @onclick="SendToGroup" disabled="@(!IsConnected)">SendToGroup</button>*@
+            <div class="JoinGroup-container">
+                <h4 class="AlignTextCenter">Join a group</h4>
+                @if (groups.Count() == 0)
+                {
+                    <p>None available</p>
+                }
+                <ul>
+                    @foreach (var group in groups)
+                    {
+                        <li>
+                            @group.Name @group.Members.Count() / 2
+                            @if (string.IsNullOrEmpty(Group.Name) && !IsUserNameInUse())
+                            {
+                            <button @onclick="() => JoinGroup(group)" disabled="@(!CanJoinGroup)">@group.Name @group.Members.Count() / 2</button>
+                            }
+                        </li>
+                    }
+                </ul>
+            </div>
         </div>
-        @*<button @onclick="Send" disabled="@(!IsConnected)">Send</button>
-            <button @onclick="SendToGroup" disabled="@(!IsConnected)">SendToGroup</button>*@
-        <button @onclick="CreateGroup" disabled="@(!CanCreateGroup)">Create group</button>
     }
-
-    <hr>
-
-
 }
-@if (!string.IsNullOrEmpty(UserName))
+@if (Group != null)
 {
-    <ul>
-        @foreach (var group in groups)
-        {
-            <li>
-                @group.Name
-                @if (Group != null && Group.Name == group.Name)
-                {
-                    <button @onclick="LeaveGroup">Leave</button>
-                    @*<button @onclick="StartGame">Start</button>*@
-                }
-                else if (string.IsNullOrEmpty(Group.Name) && !IsUserNameInUse())
-                {
-                    <button @onclick="() => JoinGroup(group)" disabled="@(!CanJoinGroup)">Join</button>
-                }
-
-            </li>
-            @foreach (string member in group.Members)
-            {
-                <li>@member</li>
-            }
-        }
-    </ul>
+    <button @onclick="LeaveGroup">Leave</button>
 }
+@*<hr>*@
 
 @*<p>@L["Test"]</p>
-<p>@L["Nogmaar1"]</p>*@
+    <p>@L["Nogmaar1"]</p>*@
 
 @code {
     private List<Group> groups = new List<Group>();
@@ -78,26 +73,13 @@
 
     protected async Task HandleMessage(MessageType messageType, object message)
     {
-
-        if (messageType == MessageType.InitGroups)
+        switch (messageType)
         {
-            InitGroups(message);
-        }
-        if (messageType == MessageType.GroupChanged)
-        {
-            GroupChanged(message);
-        }
-        if (messageType == MessageType.LeavedGroup)
-        {
-            LeaveGroup(JsonConvert.DeserializeObject<string>(message.ToString()));
-        }
-        if (messageType == MessageType.GroupDeleted)
-        {
-            GroupDeleted(JsonConvert.DeserializeObject<Group>(message.ToString()));
-        }
-        if (messageType == MessageType.StartGame)
-        {
-            StartGame(message.ToString());
+            case MessageType.InitGroups: InitGroups(message); break;
+            case MessageType.GroupChanged: GroupChanged(message); break;
+            case MessageType.LeavedGroup: LeaveGroup(JsonConvert.DeserializeObject<string>(message.ToString())); break;
+            case MessageType.GroupDeleted: GroupDeleted(JsonConvert.DeserializeObject<Group>(message.ToString())); break;
+            case MessageType.StartGame: StartGame(message.ToString()); break;
         }
         StateHasChanged();
     }
@@ -118,7 +100,7 @@
         && !groups.Any(group => group.Name.ToLower() == GroupInput.ToLower());
 
     public bool CanJoinGroup =>
-         !string.IsNullOrEmpty(UserName) && string.IsNullOrEmpty(GroupInput);
+         !string.IsNullOrEmpty(UserName) && string.IsNullOrEmpty(Group.Name);
 
 
     async Task CreateGroup()

@@ -9,6 +9,7 @@
         <img class="PlayerAnimalCards-item LittleAnimalCard-image" src=@($"/Images/{animalCardGroup.Key.ToString()}.png") />
         <div class="PlayerAnimalCards-item">
             <h5>@animalCardGroup.Key</h5>
+            <p>@((int)animalCardGroup.Key)</p>
             <p>@animalCardGroup.Count().ToString() / 4</p>
         </div>
     </div>

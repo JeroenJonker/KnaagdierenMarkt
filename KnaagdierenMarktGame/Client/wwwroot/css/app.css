@@ -3,6 +3,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Gochi+Hand&family=Roboto&display=swap');
 
+button {
+    color: #fff;
+    border-color: #0067b8;
+    background-color: #0067b8;
+    display: block;
+/*    width: 100%; */
+    width: 175px;
+    border: none;
+}
+
 .main {
     width: 100%;
     max-width: 1000px;
@@ -104,8 +114,18 @@
     text-align:right;
 }
 
+.AlignTextCenter {
+    text-align:center;
+}
+
 .Underline {
     border-bottom: 1px solid black;
+}
+
+.GroupDecision-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-evenly;
 }
 
 

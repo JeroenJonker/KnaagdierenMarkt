@@ -117,7 +117,34 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Test" xml:space="preserve">
+  <data name="Auction_BigHeaderText" xml:space="preserve">
+    <value>ACTIE</value>
+  </data>
+  <data name="Auction_DescriptionText" xml:space="preserve">
+    <value>mooi zo</value>
+  </data>
+  <data name="Auction_SmallHeaderText" xml:space="preserve">
+    <value>ACTIEYEE</value>
+  </data>
+  <data name="None, Auction, Trade" xml:space="preserve">
     <value>TESTOSAURUS</value>
+  </data>
+  <data name="None_BigHeaderText" xml:space="preserve">
+    <value>Niets</value>
+  </data>
+  <data name="None_DescriptionText" xml:space="preserve">
+    <value>Noppes</value>
+  </data>
+  <data name="None_SmallHeaderText" xml:space="preserve">
+    <value>Nada</value>
+  </data>
+  <data name="Trade_BigHeaderText" xml:space="preserve">
+    <value>UITKOPEN</value>
+  </data>
+  <data name="Trade_DescriptionText" xml:space="preserve">
+    <value>als het goed gaat</value>
+  </data>
+  <data name="Trade_SmallHeaderText" xml:space="preserve">
+    <value>YESH</value>
   </data>
 </root>

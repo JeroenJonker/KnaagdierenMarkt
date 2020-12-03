@@ -19,7 +19,7 @@
         }
     </div>
 }
-else
+else if (gameState.CurrentState == Enums.States.None)
 {
     <h1 class="Component-header">Waiting for a decision</h1>
     <h5>@gameState.CurrentPlayer.Name is choosing</h5>
@@ -38,8 +38,7 @@ else if (gameState.CurrentState == Enums.States.Trade)
     <EndScreen />
 }
 <div class="PlayerOverview-container">
-    <h3 class="PlayerOverview-header">@gameState.User.Name</h3>
-    <p>$ @gameState.User.MoneyCards.Sum()</p>
+    <h3 class="PlayerOverview-header">@gameState.User.Name $@gameState.User.MoneyCards.Sum()</h3>
     <PlayerAnimalCardsOverview AnimalCards="gameState.User.AnimalCards" />
     @foreach (Player player in gameState.Players)
     {

@@ -30,7 +30,7 @@ namespace KnaagdierenMarktGame.Server.Hubs
             //if (GetUserGroup(user) == null)
             //{
             await Groups.AddToGroupAsync(Context.ConnectionId, changedGroup.Name);
-            if (Connections.Instance.Groups.FirstOrDefault(group => group.Name == changedGroup.Name.ToLower()) is Group group)
+            if (Connections.Instance.Groups.FirstOrDefault(group => group.Name == changedGroup.Name) is Group group)
             {
                 group = changedGroup;
             }
@@ -54,6 +54,7 @@ namespace KnaagdierenMarktGame.Server.Hubs
         {
             Random rnd = new Random();
             string randomlyChosenStartPlayer = changedGroup.Members[rnd.Next(0, changedGroup.Members.Count)];
+            Connections.Instance.Groups.Remove(changedGroup);
             await Clients.Group(groupName).SendAsync("ReceiveMessage", MessageType.StartGame, randomlyChosenStartPlayer);
         }
 

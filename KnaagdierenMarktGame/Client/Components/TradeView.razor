@@ -15,9 +15,9 @@
         @if (player.Name != gameState.User.Name && GetTradeAbleAnimalCards(player) is List<AnimalCard> tradeAbleCards && tradeAbleCards.Count() > 0)
         {
             <p>@player.Name</p>
-            @foreach (AnimalCard animalCard in tradeAbleCards)
+            @foreach (var animalCard in tradeAbleCards.GroupBy(card => card))
             {
-                <button @onclick="() => BuyOverAnimalCard(player, animalCard)">@animalCard.AnimalType.ToString():@animalCard.Value</button>
+                <button @onclick="() => BuyOverAnimalCard(player, animalCard.Key)">@animalCard.Key.AnimalType.ToString():@animalCard.Key.Value amount: @tradeAbleCards.Sum(card => card.AnimalType == animalCard.Key.AnimalType ? 1 : 0)</button>
             }
         }
     }

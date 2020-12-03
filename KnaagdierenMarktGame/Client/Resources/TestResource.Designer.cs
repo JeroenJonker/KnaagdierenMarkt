@@ -61,11 +61,92 @@ namespace KnaagdierenMarktGame.Client.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to ACTIE.
+        /// </summary>
+        public static string Auction_BigHeaderText {
+            get {
+                return ResourceManager.GetString("Auction_BigHeaderText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to mooi zo.
+        /// </summary>
+        public static string Auction_DescriptionText {
+            get {
+                return ResourceManager.GetString("Auction_DescriptionText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ACTIEYEE.
+        /// </summary>
+        public static string Auction_SmallHeaderText {
+            get {
+                return ResourceManager.GetString("Auction_SmallHeaderText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to TESTOSAURUS.
         /// </summary>
-        public static string Test {
+        public static string None__Auction__Trade {
             get {
-                return ResourceManager.GetString("Test", resourceCulture);
+                return ResourceManager.GetString("None, Auction, Trade", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Niets.
+        /// </summary>
+        public static string None_BigHeaderText {
+            get {
+                return ResourceManager.GetString("None_BigHeaderText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Noppes.
+        /// </summary>
+        public static string None_DescriptionText {
+            get {
+                return ResourceManager.GetString("None_DescriptionText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Nada.
+        /// </summary>
+        public static string None_SmallHeaderText {
+            get {
+                return ResourceManager.GetString("None_SmallHeaderText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to UITKOPEN.
+        /// </summary>
+        public static string Trade_BigHeaderText {
+            get {
+                return ResourceManager.GetString("Trade_BigHeaderText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to als het goed gaat.
+        /// </summary>
+        public static string Trade_DescriptionText {
+            get {
+                return ResourceManager.GetString("Trade_DescriptionText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to YESH.
+        /// </summary>
+        public static string Trade_SmallHeaderText {
+            get {
+                return ResourceManager.GetString("Trade_SmallHeaderText", resourceCulture);
             }
         }
     }
