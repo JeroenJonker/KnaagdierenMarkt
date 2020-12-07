@@ -13,6 +13,8 @@ namespace KnaagdierenMarktGame.Client.Classes
 
         public List<AnimalCard> AnimalCards { get; set; } = new List<AnimalCard>();
 
+        public int AmountOfConnectionWarnings { get; set; } = 0;
+
         public Player(string name)
         {
             Name = name;

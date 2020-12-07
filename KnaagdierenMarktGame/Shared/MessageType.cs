@@ -8,6 +8,7 @@ namespace KnaagdierenMarktGame.Shared
     {
         GroupChanged, InitGroups, LeavedGroup, GroupDeleted, StartGame, NextPlayer, Auction, Trade, None,
         PulledAuctionCard, BeginCountdown, MakeAuctionOffer, AcceptAuctionOffer, RightOfSale, FailedOffer, PayOffer,
-        BuyOutCard, BuyOutOffer, BuyOutResult
+        BuyOutCard, BuyOutOffer, BuyOutResult,
+        StillConnected
     }
 }

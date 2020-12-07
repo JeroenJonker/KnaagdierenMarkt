@@ -237,7 +237,7 @@
 
         if (gameState.CurrentPlayer.Name == gameState.User.Name)
         {
-            gameState.NextPlayer();
+            gameState.SendNextPlayerMessage();
         }
         gameState.CurrentState = Enums.States.None;
     }
