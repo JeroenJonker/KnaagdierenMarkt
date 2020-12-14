@@ -37,17 +37,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Update="Resources\TestResource.Designer.cs">
+    <Compile Update="Resources\HeaderResource.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>TestResource.resx</DependentUpon>
+      <DependentUpon>HeaderResource.resx</DependentUpon>
     </Compile>
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Update="Resources\TestResource.resx">
+    <EmbeddedResource Update="Resources\HeaderResource.resx">
       <Generator>PublicResXFileCodeGenerator</Generator>
-      <LastGenOutput>TestResource.Designer.cs</LastGenOutput>
+      <LastGenOutput>HeaderResource.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
 

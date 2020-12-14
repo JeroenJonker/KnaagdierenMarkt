@@ -117,34 +117,49 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="Auction_BigHeaderText" xml:space="preserve">
-    <value>ACTIE</value>
+  <data name="Auction_Bidding_DescriptionText" xml:space="preserve">
+    <value>No timer set</value>
   </data>
-  <data name="Auction_DescriptionText" xml:space="preserve">
-    <value>mooi zo</value>
+  <data name="Auction_Bidding_SmallHeaderText" xml:space="preserve">
+    <value>Free bidding</value>
   </data>
-  <data name="Auction_SmallHeaderText" xml:space="preserve">
-    <value>ACTIEYEE</value>
+  <data name="Auction_Countdown_DescriptionText" xml:space="preserve">
+    <value>seconds</value>
   </data>
-  <data name="None, Auction, Trade" xml:space="preserve">
-    <value>TESTOSAURUS</value>
+  <data name="Auction_Countdown_SmallHeaderText" xml:space="preserve">
+    <value>Remaining time</value>
   </data>
-  <data name="None_BigHeaderText" xml:space="preserve">
-    <value>Niets</value>
+  <data name="BuyOver_CurrentPlayer_DescriptionText" xml:space="preserve">
+    <value />
   </data>
-  <data name="None_DescriptionText" xml:space="preserve">
-    <value>Noppes</value>
+  <data name="BuyOver_CurrentPlayer_SmallHeaderText" xml:space="preserve">
+    <value>Choose an animalcard and pay amount</value>
   </data>
-  <data name="None_SmallHeaderText" xml:space="preserve">
-    <value>Nada</value>
+  <data name="BuyOver_Others_DescriptionText" xml:space="preserve">
+    <value />
   </data>
-  <data name="Trade_BigHeaderText" xml:space="preserve">
-    <value>UITKOPEN</value>
+  <data name="BuyOver_Others_SmallHeaderText" xml:space="preserve">
+    <value>is buying over</value>
   </data>
-  <data name="Trade_DescriptionText" xml:space="preserve">
-    <value>als het goed gaat</value>
+  <data name="ChooseAction_CurrentPlayer_DescriptionText" xml:space="preserve">
+    <value />
   </data>
-  <data name="Trade_SmallHeaderText" xml:space="preserve">
-    <value>YESH</value>
+  <data name="ChooseAction_CurrentPlayer_SmallHeaderText" xml:space="preserve">
+    <value />
+  </data>
+  <data name="ChooseAction_CurrentPlayer_Title" xml:space="preserve">
+    <value>Choose an action</value>
+  </data>
+  <data name="ChooseAction_Others_DescriptionText" xml:space="preserve">
+    <value>may take some time</value>
+  </data>
+  <data name="ChooseAction_Others_SmallHeaderText" xml:space="preserve">
+    <value>is choosing</value>
+  </data>
+  <data name="ChooseAction_Others_Title" xml:space="preserve">
+    <value>Waiting till action is chosen</value>
+  </data>
+  <data name="EndScreen_SmallHeaderText" xml:space="preserve">
+    <value>is the winner!</value>
   </data>
 </root>

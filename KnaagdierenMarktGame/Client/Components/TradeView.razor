@@ -7,7 +7,9 @@
 @inject GameState gameState
 @inject GameConnection gameConnection
 
-<h3>TradeView</h3>
+<Header Title="Buy over" MainTextType="@(IsCurrentPlayerUser ? "BuyOver_CurrentPlayer" : "BuyOver_Others")"/>
+
+
 @if (ChosenAnimalCard == null && gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer)
 {
     @foreach (Player player in gameState.Players)
@@ -44,6 +46,8 @@
 
 
 @code {
+    public bool IsCurrentPlayerUser => gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer;
+
     public bool ShowMoneySelectors { get; set; } = false;
     public Dictionary<int, int> ChosenMoneyCards = new Dictionary<int, int>();
     public AnimalCard ChosenAnimalCard { get; set; }
@@ -91,7 +95,7 @@
             //bij gelijk spel...
         }
         gameState.SendNextPlayerMessage();
-        gameState.CurrentState = Enums.States.None;
+        gameState.CurrentState = Enums.States.ChooseAction;
     }
 
     public void UpdatePlayersCards(Player winningPlayer, Player losingPlayer, List<int> winningMoneyCards)

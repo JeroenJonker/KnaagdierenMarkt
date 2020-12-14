@@ -14,48 +14,76 @@ namespace KnaagdierenMarktGame.Server.Hubs
 {
     public class GameHub : Hub
     {
+        private static List<Group> _groups = new List<Group>();
+        private static Dictionary<string, string> _usernameConnectionIds = new Dictionary<string, string>();
         public override Task OnConnectedAsync()
         {
-            Clients.Caller.SendAsync("ReceiveMessage", MessageType.InitGroups, Connections.Instance.Groups);
+            Clients.Caller.SendAsync("ReceiveMessage", MessageType.InitGroups, _groups);
             return base.OnConnectedAsync();
         }
 
         public async Task SendMessage(Message message)
         {
-            await Clients.All.SendAsync("ReceiveGameMessage", message);
+            await Clients.All.SendAsync("ReceiveMessage", message);
         }
 
-        public async Task JoinGroup(Group changedGroup)
+        public async Task CreateGroup(string groupName, string userName)
         {
-            //if (GetUserGroup(user) == null)
-            //{
-            await Groups.AddToGroupAsync(Context.ConnectionId, changedGroup.Name);
-            if (Connections.Instance.Groups.FirstOrDefault(group => group.Name == changedGroup.Name) is Group group)
+            if (GetGroupByName(groupName) is null)
             {
-                group = changedGroup;
+                await AddReferencesToConnectionId(groupName, userName);
+                Group newGroup = new Group() { Name = groupName, Members = { userName } };
+                _groups.Add(newGroup);
+
+                await Clients.All.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.NewGroup, Objects = { newGroup } });
+            }
+        }
+
+        public async Task JoinGroup(string groupName, string userName)
+        {
+            if (GetGroupByName(groupName) is Group group)
+            {
+                await AddReferencesToConnectionId(groupName, userName);
+                group.Members.Add(userName);
+
+                await Clients.All.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.JoinedGroup, Objects = { group } });
+
+                if (group.Members.Count >= 3)
+                {
+                    // temporary delay
+                    Thread.Sleep(1000);
+                    await StartGame(group.Name, group);
+                }
+            }
+        }
+
+        private async Task AddReferencesToConnectionId(string groupName, string userName)
+        {
+            if (!_usernameConnectionIds.ContainsKey(Context.ConnectionId))
+            {
+                _usernameConnectionIds.Add(Context.ConnectionId, userName);
+            }
+            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+        }
+
+        private static Group GetGroupByName(string groupName)
+        {
+            if (_groups.FirstOrDefault(group => group.Name == groupName) is Group group)
+            {
+                return group;
             }
             else
             {
-                Connections.Instance.Groups.Add(changedGroup);
+                return null;
             }
-
-            await Clients.All.SendAsync("ReceiveMessage", MessageType.GroupChanged, changedGroup);
-
-            if (changedGroup.Members.Count >= 2)
-            {
-                // temporary delay
-                Thread.Sleep(1000);
-                await StartGame(changedGroup.Name, changedGroup);
-            }
-            //}
         }
 
         private async Task StartGame(string groupName, Group changedGroup)
         {
             Random rnd = new Random();
             string randomlyChosenStartPlayer = changedGroup.Members[rnd.Next(0, changedGroup.Members.Count)];
-            Connections.Instance.Groups.Remove(changedGroup);
-            await Clients.Group(groupName).SendAsync("ReceiveMessage", MessageType.StartGame, randomlyChosenStartPlayer);
+            _groups.Remove(changedGroup);
+            await Clients.Group(groupName).SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.StartGame, Objects = { randomlyChosenStartPlayer } });
         }
 
         public async Task LeaveGroup(string user)
@@ -63,11 +91,11 @@ namespace KnaagdierenMarktGame.Server.Hubs
             if (GetUserGroup(user) is Group userGroup)
             {
                 userGroup.Members.Remove(user);
-                await Clients.Others.SendAsync("ReceiveMessage", MessageType.LeavedGroup, user);
+                await Clients.Others.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.LeftGroup, Objects = { user } } );
                 if (userGroup.Members.Count < 1)
                 {
-                    await Clients.All.SendAsync("ReceiveMessage", MessageType.GroupDeleted, userGroup);
-                    Connections.Instance.Groups.Remove(userGroup);
+                    await Clients.All.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.GroupDeleted, Objects = { userGroup } });
+                    _groups.Remove(userGroup);
                 }
             }
         }
@@ -79,7 +107,7 @@ namespace KnaagdierenMarktGame.Server.Hubs
 
         public Group GetUserGroup(string userName)
         {
-            foreach (var group in Connections.Instance.Groups)
+            foreach (var group in _groups)
             {
                 if (group.Members.Any(user => user == userName))
                 {
@@ -87,6 +115,20 @@ namespace KnaagdierenMarktGame.Server.Hubs
                 }
             }
             return null;
+        }
+
+        public override Task OnDisconnectedAsync(Exception exception)
+        {
+            if (_usernameConnectionIds.ContainsKey(Context.ConnectionId))
+            {
+                string leftUser = _usernameConnectionIds[Context.ConnectionId];
+                Group leftUserGroup = GetUserGroup(leftUser);
+                if (leftUserGroup != null)
+                {
+                    LeaveGroup(leftUser);
+                }
+            }
+            return base.OnDisconnectedAsync(exception);
         }
     }
 }

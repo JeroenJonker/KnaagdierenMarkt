@@ -7,54 +7,56 @@
 @inject GameConnection gameConnection
 @inject GameState gameState
 
-@implements IDisposable
-@inject IStringLocalizer<TestResource> headerResources
+@*@implements IDisposable*@
+@inject IStringLocalizer<HeaderResource> headerResources
 
 <div class="Component-header">
-    <h1 class="Component-header">@headerResources[$"{CurrentState.ToString()}_BigHeaderText"]</h1>
-    <h5>@headerResources[$"{CurrentState.ToString()}_SmallHeaderText"]</h5>
-    <p>@headerResources[$"{CurrentState.ToString()}_DescriptionText"]</p>
+    <h1 class="Component-header">@Title</h1>
+    <h5>@SmallHeaderText @(!string.IsNullOrEmpty(MainTextType) ? headerResources[$"{MainTextType}_SmallHeaderText"] : "")</h5>
+    <p>@Description @(!string.IsNullOrEmpty(MainTextType) ? headerResources[$"{MainTextType}_DescriptionText"] : "")</p>
 </div>
 
 @code {
 
     //public string BigHeaderText { get; set; }
-    //public string SmallHeaderText { get; set; }
-    //public string Description { get; set; }
-    public Enums.States CurrentState { get; set; }
+    [Parameter] public string SmallHeaderText { get; set; }
+    [Parameter] public string Description { get; set; }
+    [Parameter] public string Title { get; set; }
+    [Parameter] public string MainTextType { get; set; }
+    //public Enums.States CurrentState { get; set; }
 
-    protected override void OnInitialized()
-    {
-        gameConnection.OnNewGameMessage += HandleMessage;
-        gameState.OnPropertyChanged += UpdateScreen;
-        base.OnInitialized();
-    }
+    //protected override void OnInitialized()
+    //{
+    //    gameConnection.OnNewGameMessage += HandleMessage;
+    //    gameState.OnPropertyChanged += UpdateScreen;
+    //    base.OnInitialized();
+    //}
 
-    public async Task UpdateScreen(object ob) => CurrentState = gameState.CurrentState;
+    //public async Task UpdateScreen(object ob) => CurrentState = gameState.CurrentState;
 
-    protected override Task OnInitializedAsync()
-    {
-        return base.OnInitializedAsync();
-    }
+    //protected override Task OnInitializedAsync()
+    //{
+    //    return base.OnInitializedAsync();
+    //}
 
-    protected async Task HandleMessage(Message message)
-    {
-        //CurrentMessageType = message.MessageType;
-        //switch (message.MessageType)
-        //{
-        //    case MessageType.BeginCountdown: break;
-        //    case MessageType.MakeAuctionOffer: break;
-        //    case MessageType.AcceptAuctionOffer: break;
-        //    case MessageType.PayOffer: break;
-        //    case MessageType.PulledAuctionCard: break;
-        //    case MessageType.FailedOffer: break;
-        //}
-        StateHasChanged();
-    }
+    //protected async Task HandleMessage(Message message)
+    //{
+    //    //CurrentMessageType = message.MessageType;
+    //    //switch (message.MessageType)
+    //    //{
+    //    //    case MessageType.BeginCountdown: break;
+    //    //    case MessageType.MakeAuctionOffer: break;
+    //    //    case MessageType.AcceptAuctionOffer: break;
+    //    //    case MessageType.PayOffer: break;
+    //    //    case MessageType.PulledAuctionCard: break;
+    //    //    case MessageType.FailedOffer: break;
+    //    //}
+    //    StateHasChanged();
+    //}
 
-    public void Dispose()
-    {
-        gameConnection.OnNewGameMessage -= HandleMessage;
-        gameState.OnPropertyChanged -= UpdateScreen;
-    }
+    //public void Dispose()
+    //{
+    //    gameConnection.OnNewGameMessage -= HandleMessage;
+    //    gameState.OnPropertyChanged -= UpdateScreen;
+    //}
 }

@@ -20,7 +20,8 @@ namespace KnaagdierenMarktGame.Client.Classes
 
         public ObservableCollection<AnimalCard> RemainingAuctionCards { get; set; } = new ObservableCollection<AnimalCard>();
 
-        //public ObservableCollection<AnimalCard> RemainingAuctionCards { get; set; } = new ObservableCollection<AnimalCard>();
+        private List<int> StartingMoneyCards => new List<int>() { 0, 0, 10, 10, 10, 10, 50 };
+
         public List<Player> Players { get; set; } = new List<Player>();
         public List<string> PlayerOrder { get; set; } = new List<string>();
 
@@ -39,7 +40,7 @@ namespace KnaagdierenMarktGame.Client.Classes
             set { currentPlayer = value; OnPropertyChanged?.Invoke(CurrentPlayer); }
         }
 
-        private States currentState = States.None;
+        private States currentState = States.Login;
 
         public States CurrentState
         {
@@ -47,13 +48,12 @@ namespace KnaagdierenMarktGame.Client.Classes
             set { currentState = value; OnPropertyChanged?.Invoke(CurrentState); }
         }
 
-        //public States CurrentState { get; set; } = States.None;
         public Timer Timer { get; set; }
 
-        public void TestMessage()
-        {
-            System.Diagnostics.Debug.WriteLine("GameStateTest");
-        }
+        //public void TestMessage()
+        //{
+        //    System.Diagnostics.Debug.WriteLine("GameStateTest");
+        //}
 
         private readonly GameConnection gameConnection;
 
@@ -77,6 +77,7 @@ namespace KnaagdierenMarktGame.Client.Classes
 
         public void GameSetup(string userName, List<string> playerNames, string startPlayer)
         {
+            CurrentState = States.ChooseAction;
             RemainingAuctionCards.CollectionChanged += (object sender, NotifyCollectionChangedEventArgs e) => OnPropertyChanged?.Invoke(RemainingAuctionCards);
             SetupPlayers(playerNames);
             CurrentPlayer = Players.First(player => player.Name == startPlayer);
@@ -89,7 +90,7 @@ namespace KnaagdierenMarktGame.Client.Classes
 
         public void StartConnectionChecker()
         {
-            Timer = new Timer(5000);
+            Timer = new Timer(3000);
             Timer.Elapsed += HandleTimer;
             Timer.Start();
         }
@@ -118,7 +119,7 @@ namespace KnaagdierenMarktGame.Client.Classes
             if (Players.Count > 1)
             {
                 DetermineNewCurrentPlayer(player);
-                CurrentState = States.None;
+                CurrentState = States.ChooseAction;
                 Players.Remove(player);
                 PlayerOrder.Remove(player.Name);
                 foreach (AnimalCard card in player.AnimalCards)
@@ -184,8 +185,6 @@ namespace KnaagdierenMarktGame.Client.Classes
                 Players.Add(player);
             }
         }
-
-        private List<int> StartingMoneyCards => new List<int>() { 0, 0, 10, 10, 10, 10, 50 };
 
         public async Task SendNextPlayerMessage()
         {

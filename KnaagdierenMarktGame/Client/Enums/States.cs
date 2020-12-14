@@ -7,6 +7,6 @@ namespace KnaagdierenMarktGame.Client.Enums
 {
     public enum States
     {
-        None, Auction, Trade
+        Login, ChooseAction, Auction, Trade, Auction_Paying
     }
 }

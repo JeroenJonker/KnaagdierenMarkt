@@ -1,0 +1,60 @@
+﻿@using Microsoft.AspNetCore.SignalR.Client
+@using KnaagdierenMarktGame.Shared
+@using KnaagdierenMarktGame.Client.Classes
+
+@inject GameState gameState
+@inject GameConnection gameConnection
+@*Title="@(IsCurrentPlayerUser ? "ChooseAction_CurrentPlayer" : "ChooseAction_Others")"*@
+<Header Title="@(IsCurrentPlayerUser ? "Choose an action" : "Waiting till action is chosen")" MainTextType="@(IsCurrentPlayerUser ? "ChooseAction_CurrentPlayer" : "ChooseAction_Others")"
+        SmallHeaderText="@(IsCurrentPlayerUser ? "" : gameState.CurrentPlayer.Name)" />
+
+@if (IsCurrentPlayerUser)
+{
+    <div class="Auction-CurrentPlayerButtons-container">
+        @if (gameState.RemainingAuctionCards.Count() > 0)
+        {
+            <button @onclick="OnAuctionClick">Auction</button>
+        }
+        @if (CanPlayerTradeAnimalCards(gameState.User))
+        {
+            <button @onclick="OnTradeClick">Trade</button>
+        }
+    </div>
+}
+
+@code
+{
+    public bool IsCurrentPlayerUser => gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer;
+
+    protected override void OnInitialized()
+    {
+        gameState.OnPropertyChanged += UpdateScreen;
+        base.OnInitialized();
+    }
+
+    public async Task UpdateScreen(object ob) => StateHasChanged();
+
+    public async Task OnAuctionClick()
+    {
+        Message message = new Message() { MessageType = MessageType.Auction, Sender = gameState.User.Name };
+        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
+
+    public async Task OnTradeClick()
+    {
+        Message message = new Message() { MessageType = MessageType.Trade, Sender = gameState.User.Name };
+        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
+
+    public bool CanPlayerTradeAnimalCards(Player player)
+    {
+        foreach (AnimalCard card in player.AnimalCards)
+        {
+            if (player.AnimalCards.Count(animalCard => animalCard.AnimalType == card.AnimalType) < 4)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+}

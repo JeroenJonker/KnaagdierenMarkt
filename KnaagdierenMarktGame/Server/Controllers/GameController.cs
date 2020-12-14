@@ -20,34 +20,5 @@ namespace KnaagdierenMarktGame.Server
         {
             hubContext = context;
         }
-
-        //[HttpPost]
-        //public async Task SendMessage(string user, string message)
-        //{
-        //    await hubContext.Clients.All.SendAsync("ReceiveMessage", user, message);
-        //}
-
-        //public async Task JoinGroup(string groupName)
-        //{
-        //    if (GroupNames.Contains(groupName))
-        //    {
-        //        GroupNames.Add(groupName);
-        //    }
-        //    await hubContext.Groups.AddToGroupAsync(((GameHub)hubContext).Context.ConnectionId, groupName);
-        //}
-
-        //public async Task SendMessageToGroup(string groupName, string user, string message)
-        //{
-        //    await hubContext.Clients.Group(groupName).SendAsync("ReceiveMessage", user, message);
-        //}
-
-        //[HttpGet]
-        //public List<string> GetGroups()
-        //{
-        //    return Connections.Instance.Groups;
-        //    //return Ok(GroupNames);
-        //}
-
-        //IActionResult
     }
 }

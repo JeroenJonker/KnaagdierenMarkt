@@ -1,45 +1,24 @@
 ﻿@page "/"
 @inject HttpClient Http
 @using Microsoft.AspNetCore.SignalR.Client
-@using KnaagdierenMarktGame.Shared
-@using Newtonsoft.Json
 @using KnaagdierenMarktGame.Client.Components
 @using KnaagdierenMarktGame.Client.Classes
 @inject GameConnection gameConnection
 @inject GameState gameState
 @implements IDisposable
-@*<p>@gameState.Players.Count</p>
-<p >@IsGameStarted()</p>*@
-@*<Header></Header>*@
-@if (gameState.User != null)
+
+@if (gameState.CurrentState == Enums.States.Login)
 {
-    @*<p>test</p>*@
-    <Game/>
+    <Login />
 }
 else
 {
-    <Login />
+    <Game />
 }
 
 
 
 @code {
-    //private HubConnection hubConnection;
-    //private List<Group> groups = new List<Group>();
-    //private Group Group = new Group();
-    //private User user = new User();
-
-    //public User User
-    //{
-    //    get { return user; }
-    //    set { user = value; }
-    //}
-
-    public bool IsGameStarted()
-    {
-        return gameState.Players.Count >= 2;
-    }
-
     protected override async Task OnInitializedAsync()
     {
         gameState.OnPropertyChanged += UpdateScreen;
@@ -47,7 +26,6 @@ else
     }
 
     public async Task UpdateScreen(object ob) => StateHasChanged();
-
 
     public bool IsConnected =>
     gameConnection.HubConnection.State == HubConnectionState.Connected;

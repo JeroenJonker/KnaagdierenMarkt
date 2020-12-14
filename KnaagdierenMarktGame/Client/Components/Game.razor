@@ -5,27 +5,15 @@
 @inject GameState gameState
 @inject GameConnection gameConnection
 
-@if (gameState.CurrentState == Enums.States.None && gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer)
+@if (IsEndOfGame)
 {
-    <h1 class="Component-header">Choose an option</h1>
-    <div class="Auction-CurrentPlayerButtons-container">
-        @if (gameState.RemainingAuctionCards.Count() > 0)
-        {
-            <button @onclick="OnAuctionClick">Auction</button>
-        }
-        @if (CanTrade)
-        {
-            <button @onclick="OnTradeClick">Trade</button>
-        }
-    </div>
+    <EndScreen />
 }
-else if (gameState.CurrentState == Enums.States.None)
+else if (gameState.CurrentState == Enums.States.ChooseAction)
 {
-    <h1 class="Component-header">Waiting for a decision</h1>
-    <h5>@gameState.CurrentPlayer.Name is choosing</h5>
-    <p>May take some time</p>
+    <ChooseActionScreen/>
 }
-@if (gameState.CurrentState == Enums.States.Auction)
+else if (gameState.CurrentState == Enums.States.Auction)
 {
     <Auction />
 }
@@ -33,10 +21,7 @@ else if (gameState.CurrentState == Enums.States.Trade)
 {
     <TradeView />
 }
-@if (IsEndOfGame)
-{
-    <EndScreen />
-}
+
 <div class="PlayerOverview-container">
     <h3 class="PlayerOverview-header">@gameState.User.Name $@gameState.User.MoneyCards.Sum()</h3>
     <PlayerAnimalCardsOverview AnimalCards="gameState.User.AnimalCards" />
@@ -54,8 +39,6 @@ else if (gameState.CurrentState == Enums.States.Trade)
 
 @code
 {
-    public bool ChoiceMade { get; set; }
-    public bool CanTrade => CanPlayerTradeAnimalCards(gameState.User);
     public bool IsEndOfGame => !gameState.Players.Any(player => CanPlayerTradeAnimalCards(player)) && gameState.RemainingAuctionCards.Count() < 1;
 
     protected override void OnInitialized()
@@ -71,7 +54,7 @@ else if (gameState.CurrentState == Enums.States.Trade)
         {
             case MessageType.Auction: gameState.CurrentState = Enums.States.Auction; break;
             case MessageType.Trade: gameState.CurrentState = Enums.States.Trade; break;
-            case MessageType.None: gameState.CurrentState = Enums.States.None; break;
+            case MessageType.None: gameState.CurrentState = Enums.States.ChooseAction; break;
             case MessageType.NextPlayer: OnNextPlayer(message); break;
         }
         StateHasChanged();
@@ -87,18 +70,6 @@ else if (gameState.CurrentState == Enums.States.Trade)
     }
 
     public async Task UpdateScreen(object ob) => StateHasChanged();
-
-    public async Task OnAuctionClick()
-    {
-        Message message = new Message() { MessageType = MessageType.Auction, Sender = gameState.User.Name };
-        await gameConnection.HubConnection.SendAsync("SendMessage", message);
-    }
-
-    public async Task OnTradeClick()
-    {
-        Message message = new Message() { MessageType = MessageType.Trade, Sender = gameState.User.Name };
-        await gameConnection.HubConnection.SendAsync("SendMessage", message);
-    }
 
     public bool CanPlayerTradeAnimalCards(Player player)
     {

@@ -6,10 +6,9 @@
 @using Newtonsoft.Json
 @using Microsoft.Extensions.Localization
 @using KnaagdierenMarktGame.Client.Resources
-@inject IStringLocalizer<TestResource> L
 
 <h1 class="Component-header">Login</h1>
-@if (string.IsNullOrEmpty(Group.Name))
+@if (Group == null)
 {
     <div class="form-group AlignTextCenter">
         <label>
@@ -26,8 +25,6 @@
                 <input class="clean-input" @bind="GroupInput" @bind:event="oninput" placeholder="groupname" />
                 <button @onclick="CreateGroup" disabled="@(!CanCreateGroup)">Create</button>
             </div>
-            @*<button @onclick="Send" disabled="@(!IsConnected)">Send</button>
-                <button @onclick="SendToGroup" disabled="@(!IsConnected)">SendToGroup</button>*@
             <div class="JoinGroup-container">
                 <h4 class="AlignTextCenter">Join a group</h4>
                 @if (groups.Count() == 0)
@@ -39,9 +36,9 @@
                     {
                         <li>
                             @group.Name @group.Members.Count() / 2
-                            @if (string.IsNullOrEmpty(Group.Name) && !IsUserNameInUse())
+                            @if (Group == null && !IsUserNameInUse())
                             {
-                            <button @onclick="() => JoinGroup(group)" disabled="@(!CanJoinGroup)">@group.Name @group.Members.Count() / 2</button>
+                                <button @onclick="() => JoinGroup(group)" disabled="@(!CanJoinGroup)">@group.Name @group.Members.Count() / 2</button>
                             }
                         </li>
                     }
@@ -52,47 +49,85 @@
 }
 @if (Group != null)
 {
+<div>
+    <p>@Group.Name @Group.Members.Count() / 2</p>
     <button @onclick="LeaveGroup">Leave</button>
-}
-@*<hr>*@
+</div>
 
-@*<p>@L["Test"]</p>
-    <p>@L["Nogmaar1"]</p>*@
+}
 
 @code {
     private List<Group> groups = new List<Group>();
-    private Group Group = new Group();
+    private Group Group = null;
     public string GroupInput { get; set; }
     public string UserName { get; set; }
 
     protected override void OnInitialized()
     {
-        gameConnection.OnNewMessage += HandleMessage;
+        gameConnection.OnNewGameMessage += HandleMessage;
         base.OnInitialized();
     }
 
-    protected async Task HandleMessage(MessageType messageType, object message)
+    protected async Task HandleMessage(Message message)
     {
-        switch (messageType)
+        switch (message.MessageType)
         {
-            case MessageType.InitGroups: InitGroups(message); break;
-            case MessageType.GroupChanged: GroupChanged(message); break;
-            case MessageType.LeavedGroup: LeaveGroup(JsonConvert.DeserializeObject<string>(message.ToString())); break;
-            case MessageType.GroupDeleted: GroupDeleted(JsonConvert.DeserializeObject<Group>(message.ToString())); break;
-            case MessageType.StartGame: StartGame(message.ToString()); break;
+            case MessageType.InitGroups: OnInitGroups(message); break;
+            case MessageType.NewGroup: OnNewGroup(message); break;
+            case MessageType.JoinedGroup: OnJoinedGroup(message); break;
+            case MessageType.LeftGroup: OnLeftGroup(message); break;
+            case MessageType.GroupDeleted: OnGroupDeleted(message); break;
+            case MessageType.StartGame: OnStartGame(message.ToString()); break;
         }
         StateHasChanged();
     }
 
-    public void StartGame(string startPlayer)
+    public void OnInitGroups(Message message)
     {
-        System.Diagnostics.Debug.WriteLine("GROUPMEMBERS");
-        foreach (string groupmember in Group.Members)
+        groups = JsonConvert.DeserializeObject<List<Group>>(message.Objects[0].ToString());
+    }
+
+    public void OnNewGroup(Message message)
+    {
+        Group newGroup = JsonConvert.DeserializeObject<Group>(message.Objects[0].ToString());
+        if (newGroup.Members.First() == UserName)
         {
-            System.Diagnostics.Debug.WriteLine(groupmember);
+            Group = newGroup;
         }
+        groups.Add(newGroup);
+    }
+
+    public void OnJoinedGroup(Message message)
+    {
+        Group changedGroup = JsonConvert.DeserializeObject<Group>(message.Objects[0].ToString());
+        if (groups.FirstOrDefault(group => group.Name == changedGroup.Name) is Group group)
+        {
+            group.Members = changedGroup.Members;
+        }
+    }
+
+    public void OnLeftGroup(Message message)
+    {
+        string leftUser = JsonConvert.DeserializeObject<string>(message.Objects[0].ToString());
+        RemoveMemberFromGroup(leftUser);
+    }
+
+    public void OnGroupDeleted(Message message)
+    {
+        Group deletedGroup = JsonConvert.DeserializeObject<Group>(message.Objects[0].ToString());
+        Group group = groups.First(groupname => deletedGroup.Name == groupname.Name);
+        groups.Remove(group);
+    }
+
+    public void RemoveMemberFromGroup(string username)
+    {
+        Group group = groups.First(groupname => groupname.Members.Contains(username));
+        group.Members.Remove(username);
+    }
+
+    public void OnStartGame(string startPlayer)
+    {
         gameState.GameSetup(UserName, Group.Members, startPlayer);
-        StateHasChanged();
     }
 
     public bool CanCreateGroup =>
@@ -100,72 +135,28 @@
         && !groups.Any(group => group.Name.ToLower() == GroupInput.ToLower());
 
     public bool CanJoinGroup =>
-         !string.IsNullOrEmpty(UserName) && string.IsNullOrEmpty(Group.Name);
+         !string.IsNullOrEmpty(UserName) && Group == null;
 
 
     async Task CreateGroup()
     {
-        Group = new Group() { Name = GroupInput };
-        Group.Members.Add(UserName);
-        await gameConnection.HubConnection.SendAsync("JoinGroup", Group);
+        await gameConnection.HubConnection.SendAsync("CreateGroup", GroupInput, UserName);
     }
 
     async Task JoinGroup(Group selectedGroup)
     {
         Group = selectedGroup;
         Group.Members.Add(UserName);
-        await gameConnection.HubConnection.SendAsync("JoinGroup", Group);
+        await gameConnection.HubConnection.SendAsync("JoinGroup", Group.Name, UserName);
     }
 
     async Task LeaveGroup()
     {
         await gameConnection.HubConnection.SendAsync("LeaveGroup", UserName);
-        LeaveGroup(UserName);
+        RemoveMemberFromGroup(UserName);
         Group = null;
-        //User.Group = string.Empty;
-    }
-
-
-    public void GroupChanged(object message)
-    {
-        Group changedGroup = JsonConvert.DeserializeObject<Group>(message.ToString());
-        if (groups.FirstOrDefault(group => group.Name == changedGroup.Name) is Group group)
-        {
-            group.Members = changedGroup.Members;
-        }
-        //moet beter kunnen...
-        if (changedGroup.Name == Group.Name)
-        {
-            Group.Members = changedGroup.Members;
-        }
-        else
-        {
-            groups.Add(changedGroup);
-        }
-        // change according to the amount of players
-        if (changedGroup.Members.Count >= 2)
-        {
-            GroupDeleted(changedGroup);
-        }
-    }
-
-    public void LeaveGroup(string leavedUser)
-    {
-        // betere naamgeving
-        Group group = groups.First(groupname => groupname.Members.Contains(leavedUser));
-        group.Members.Remove(leavedUser);
-    }
-
-    public void GroupDeleted(Group deletedGroup)
-    {
-        Group group = groups.First(groupname => deletedGroup.Name == groupname.Name);
-        groups.Remove(group);
     }
 
     public bool IsUserNameInUse() => groups.Any(group => group.Members.Any(member => member == UserName));
 
-    public void InitGroups(object message)
-    {
-        groups = JsonConvert.DeserializeObject<List<Group>>(message.ToString());
-    }
 }
