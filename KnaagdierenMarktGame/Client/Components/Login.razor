@@ -77,7 +77,7 @@
             case MessageType.JoinedGroup: OnJoinedGroup(message); break;
             case MessageType.LeftGroup: OnLeftGroup(message); break;
             case MessageType.GroupDeleted: OnGroupDeleted(message); break;
-            case MessageType.StartGame: OnStartGame(message.ToString()); break;
+            case MessageType.StartGame: OnStartGame(message); break;
         }
         StateHasChanged();
     }
@@ -119,15 +119,17 @@
         groups.Remove(group);
     }
 
+    public void OnStartGame(Message message)
+    {
+        string startPlayer = message.Objects[0].ToString();
+        //string startPlayer = JsonConvert.DeserializeObject<string>(message.Objects[0].ToString());
+        gameState.GameSetup(UserName, Group.Members, startPlayer);
+    }
+
     public void RemoveMemberFromGroup(string username)
     {
         Group group = groups.First(groupname => groupname.Members.Contains(username));
         group.Members.Remove(username);
-    }
-
-    public void OnStartGame(string startPlayer)
-    {
-        gameState.GameSetup(UserName, Group.Members, startPlayer);
     }
 
     public bool CanCreateGroup =>

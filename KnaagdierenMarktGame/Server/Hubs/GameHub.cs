@@ -18,7 +18,7 @@ namespace KnaagdierenMarktGame.Server.Hubs
         private static Dictionary<string, string> _usernameConnectionIds = new Dictionary<string, string>();
         public override Task OnConnectedAsync()
         {
-            Clients.Caller.SendAsync("ReceiveMessage", MessageType.InitGroups, _groups);
+            Clients.Caller.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.InitGroups, Objects = { _groups } });
             return base.OnConnectedAsync();
         }
 

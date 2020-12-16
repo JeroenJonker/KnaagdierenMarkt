@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
-//using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 
@@ -77,13 +76,13 @@ namespace KnaagdierenMarktGame.Client.Classes
 
         public void GameSetup(string userName, List<string> playerNames, string startPlayer)
         {
-            CurrentState = States.ChooseAction;
             RemainingAuctionCards.CollectionChanged += (object sender, NotifyCollectionChangedEventArgs e) => OnPropertyChanged?.Invoke(RemainingAuctionCards);
             SetupPlayers(playerNames);
             CurrentPlayer = Players.First(player => player.Name == startPlayer);
             User = Players.First(player => player.Name == userName);
             SetupAuctionCards();
             PlayerOrder.Add(CurrentPlayer.Name);
+            CurrentState = States.ChooseAction;
             StartConnectionChecker();
             //OnPropertyChanged?.Invoke(CurrentPlayer);
         }
