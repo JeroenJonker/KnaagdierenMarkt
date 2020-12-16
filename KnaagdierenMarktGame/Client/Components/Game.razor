@@ -13,7 +13,7 @@ else if (gameState.CurrentState == Enums.States.ChooseAction)
 {
     <ChooseActionScreen/>
 }
-else if (gameState.CurrentState == Enums.States.Auction)
+else if (gameState.CurrentState == Enums.States.Auction || gameState.CurrentState == Enums.States.Auction_Paying)
 {
     <Auction />
 }
@@ -62,11 +62,11 @@ else if (gameState.CurrentState == Enums.States.Trade)
 
     public void OnNextPlayer(Message message)
     {
-        gameState.CurrentPlayer = gameState.Players.First(player => player.Name == message.Objects[0].ToString());
-        if (!gameState.PlayerOrder.Contains(gameState.CurrentPlayer.Name))
-        {
-            gameState.PlayerOrder.Add(gameState.CurrentPlayer.Name);
-        }
+        gameState.CurrentPlayer = gameState.Players.Find(player => player.Name == message.Objects[0].ToString());
+        //if (!gameState.PlayerOrder.Contains(gameState.CurrentPlayer.Name))
+        //{
+        //    gameState.PlayerOrder.Add(gameState.CurrentPlayer.Name);
+        //}
     }
 
     public async Task UpdateScreen(object ob) => StateHasChanged();

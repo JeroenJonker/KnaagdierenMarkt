@@ -121,9 +121,62 @@
             case MessageType.AcceptAuctionOffer: AcceptOffer(message); break;
             case MessageType.PayOffer: PayOffer(message); break;
             case MessageType.PulledAuctionCard: await PulledActionCard(message); break;
-            case MessageType.FailedOffer: break;
+            case MessageType.FailedOffer: OnFailedOffer(message); break;
         }
         StateHasChanged();
+    }
+
+    public void StartCountdown()
+    {
+        CountdownTimer = 3;
+        Timer = new Timer(2000);
+        Timer.Elapsed += HandleTimer;
+        Timer.Start();
+    }
+
+    public void MakeActionOffer(Message message)
+    {
+        int newOffer = JsonConvert.DeserializeObject<int>(message.Objects[0].ToString());
+        if (HighestOffer < newOffer && !(Disqwalified.Find(Player => Player.Name == message.Sender) is Player playerOffer && newOffer > playerOffer.MoneyCards.Sum()))
+        {
+            HighestOfferPlayer = gameState.Players.First(Player => Player.Name == message.Sender);
+            HighestOffer = newOffer;
+            Offerings.Add($"$ {newOffer} {message.Sender}");
+            Offerings = Offerings.OrderByDescending(offerings => int.Parse(offerings.Split(' ')[1].ToString())).ToList();
+        }
+    }
+
+    public void AcceptOffer(Message message)
+    {
+        gameState.CurrentState = Enums.States.Auction_Paying;
+        if (HighestOfferPlayer == gameState.User)
+        {
+            ShowMoneySelectors = true;
+        }
+    }
+
+    public void PayOffer(Message message)
+    {
+        List<int> payment = JsonConvert.DeserializeObject<List<int>>(message.Objects[0].ToString());
+
+        HandleSoldAuctionCard(payment, message.Sender);
+        ResetAuction();
+
+        if (gameState.CurrentPlayer.Name == gameState.User.Name)
+        {
+            gameState.SendNextPlayerMessage();
+        }
+        gameState.CurrentState = Enums.States.ChooseAction;
+    }
+
+    public void OnFailedOffer(Message message)
+    {
+        HighestOffer = 0;
+        HighestOfferPlayer = null;
+        Offerings.Clear();
+        CountdownTimer = -1;
+        Player failedOfferPlayer = gameState.Players.First(player => player.Name == message.Objects[0].ToString());
+        Disqwalified.Add(failedOfferPlayer);
     }
 
     public async void BeginCountdown()
@@ -171,59 +224,6 @@
         {
             player.MoneyCards.Add(value);
         }
-    }
-
-    public void MakeActionOffer(Message message)
-    {
-        int newOffer = JsonConvert.DeserializeObject<int>(message.Objects[0].ToString());
-        if (HighestOffer < newOffer)
-        {
-            HighestOfferPlayer = gameState.Players.First(Player => Player.Name == message.Sender);
-            HighestOffer = newOffer;
-            Offerings.Add($"$ {newOffer} {message.Sender}");
-            Offerings = Offerings.OrderByDescending(offerings => int.Parse(offerings.Split(' ')[1].ToString())).ToList();
-        }
-    }
-
-    public void AcceptOffer(Message message)
-    {
-        gameState.CurrentState = Enums.States.Auction_Paying;
-        if (HighestOfferPlayer.MoneyCards.Aggregate((value, total) => total += value) >= HighestOffer)
-        {
-            if (HighestOfferPlayer == gameState.User)
-            {
-                ShowMoneySelectors = true;
-            }
-        }
-        else
-        {
-            HighestOffer = 0;
-            HighestOfferPlayer = null;
-            Disqwalified.Add(HighestOfferPlayer);
-            message.Objects.Add(HighestOfferPlayer);
-        }
-    }
-
-    public void StartCountdown()
-    {
-        CountdownTimer = 3;
-        Timer = new Timer(2000);
-        Timer.Elapsed += HandleTimer;
-        Timer.Start();
-    }
-
-    public void PayOffer(Message message)
-    {
-        List<int> payment = JsonConvert.DeserializeObject<List<int>>(message.Objects[0].ToString());
-
-        HandleSoldAuctionCard(payment, message.Sender);
-        ResetAuction();
-
-        if (gameState.CurrentPlayer.Name == gameState.User.Name)
-        {
-            gameState.SendNextPlayerMessage();
-        }
-        gameState.CurrentState = Enums.States.ChooseAction;
     }
 
     public void HandleSoldAuctionCard(List<int> payment, string sender)
@@ -293,16 +293,14 @@
 
     public async Task OnAcceptOffer()
     {
-        if (HighestOfferPlayer.MoneyCards.Aggregate((value, total) => total += value) >= HighestOffer)
+        if (HighestOfferPlayer.MoneyCards.Sum() >= HighestOffer)
         {
             await SendSimpleMessage(MessageType.AcceptAuctionOffer);
         }
         else
         {
-            HighestOffer = 0;
-            Disqwalified.Add(HighestOfferPlayer);
             Message message = new Message() { MessageType = MessageType.FailedOffer, Sender = gameState.User.Name };
-            message.Objects.Add(HighestOfferPlayer);
+            message.Objects.Add(HighestOfferPlayer.Name);
             await gameConnection.HubConnection.SendAsync("SendMessage", message);
         }
     }

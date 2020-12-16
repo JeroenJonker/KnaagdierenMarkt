@@ -22,7 +22,6 @@ namespace KnaagdierenMarktGame.Client.Classes
         private List<int> StartingMoneyCards => new List<int>() { 0, 0, 10, 10, 10, 10, 50 };
 
         public List<Player> Players { get; set; } = new List<Player>();
-        public List<string> PlayerOrder { get; set; } = new List<string>();
 
         private Player user;
 
@@ -74,14 +73,13 @@ namespace KnaagdierenMarktGame.Client.Classes
         private void ResetAmountOfConnectionWarningsForPlayer(string playername) => 
             Players.First(player => player.Name == playername).AmountOfConnectionWarnings = 0;
 
-        public void GameSetup(string userName, List<string> playerNames, string startPlayer)
+        public void GameSetup(string userName, List<string> playerNames, List<string> playerOrder)
         {
             RemainingAuctionCards.CollectionChanged += (object sender, NotifyCollectionChangedEventArgs e) => OnPropertyChanged?.Invoke(RemainingAuctionCards);
-            SetupPlayers(playerNames);
-            CurrentPlayer = Players.First(player => player.Name == startPlayer);
+            SetupPlayers(playerOrder);
+            CurrentPlayer = Players.First(player => player.Name == playerOrder.First());
             User = Players.First(player => player.Name == userName);
             SetupAuctionCards();
-            PlayerOrder.Add(CurrentPlayer.Name);
             CurrentState = States.ChooseAction;
             StartConnectionChecker();
             //OnPropertyChanged?.Invoke(CurrentPlayer);
@@ -120,7 +118,7 @@ namespace KnaagdierenMarktGame.Client.Classes
                 DetermineNewCurrentPlayer(player);
                 CurrentState = States.ChooseAction;
                 Players.Remove(player);
-                PlayerOrder.Remove(player.Name);
+                //PlayerOrder.Remove(player.Name);
                 foreach (AnimalCard card in player.AnimalCards)
                 {
                     RemainingAuctionCards.Add(card);
@@ -176,7 +174,6 @@ namespace KnaagdierenMarktGame.Client.Classes
         {
             foreach (string playerName in playerNames)
             {
-                System.Diagnostics.Debug.WriteLine(playerName);
                 Player player = new Player(playerName)
                 {
                     MoneyCards = new List<int>(StartingMoneyCards)
@@ -194,18 +191,8 @@ namespace KnaagdierenMarktGame.Client.Classes
 
         private string GetNextPlayerName()
         {
-            if (Players.Any(player => !PlayerOrder.Contains(player.Name)))
-            {
-                List<Player> NotChosenPlayers = Players.Where(player => !PlayerOrder.Contains(player.Name)).ToList();
-                Random random = new Random();
-                Player chosenPlayer = NotChosenPlayers[random.Next(0, NotChosenPlayers.Count())];
-                return chosenPlayer.Name;
-            }
-            else
-            {
-                int index = PlayerOrder.FindIndex(player => player == CurrentPlayer.Name);
-                return PlayerOrder[index == PlayerOrder.Count() - 1 ? 0 : index + 1];
-            }
+            int index = Players.FindIndex(player => player.Name == CurrentPlayer.Name);
+            return Players[index == Players.Count() - 1 ? 0 : index + 1].Name;
         }
     }
 }

@@ -17,7 +17,7 @@
         </label>
     </div>
 
-    if (!string.IsNullOrEmpty(UserName) && !IsUserNameInUse())
+    if (!string.IsNullOrEmpty(UserName))
     {
         <div class="GroupDecision-container">
             <div class="CreateGroup-container form-group">
@@ -31,18 +31,22 @@
                 {
                     <p>None available</p>
                 }
-                <ul>
-                    @foreach (var group in groups)
+            <ul>
+                @foreach (var group in groups)
+                {
+                    if (group.Members.Count() < Constants.MaxPlayers)
                     {
-                        <li>
-                            @group.Name @group.Members.Count() / 2
-                            @if (Group == null && !IsUserNameInUse())
-                            {
-                                <button @onclick="() => JoinGroup(group)" disabled="@(!CanJoinGroup)">@group.Name @group.Members.Count() / 2</button>
-                            }
-                        </li>
+                    <li>
+                        @($"{group.Name} {group.Members.Count()} / {Constants.MaxPlayers}")
+                        @if (Group == null && !IsUserNameInGroup(group))
+                        {
+                            <button @onclick="() => JoinGroup(group)" disabled="@(!CanJoinGroup)">@group.Name @group.Members.Count() / 2</button>
+                        }
+                        @*change name to join group*@
+                    </li>
                     }
-                </ul>
+                }
+            </ul>
             </div>
         </div>
     }
@@ -50,7 +54,7 @@
 @if (Group != null)
 {
 <div>
-    <p>@Group.Name @Group.Members.Count() / 2</p>
+    <p>@Group.Name @Group.Members.Count() / @Constants.MaxPlayers</p>
     <button @onclick="LeaveGroup">Leave</button>
 </div>
 
@@ -115,26 +119,26 @@
     public void OnGroupDeleted(Message message)
     {
         Group deletedGroup = JsonConvert.DeserializeObject<Group>(message.Objects[0].ToString());
-        Group group = groups.First(groupname => deletedGroup.Name == groupname.Name);
+        Group group = groups.Find(groupname => deletedGroup.Name == groupname.Name);
         groups.Remove(group);
     }
 
     public void OnStartGame(Message message)
     {
-        string startPlayer = message.Objects[0].ToString();
-        //string startPlayer = JsonConvert.DeserializeObject<string>(message.Objects[0].ToString());
-        gameState.GameSetup(UserName, Group.Members, startPlayer);
+        //string startPlayer = message.Objects[0].ToString();
+        List<string> playerOrder = JsonConvert.DeserializeObject<List<string>>(message.Objects[0].ToString());
+        gameState.GameSetup(UserName, Group.Members, playerOrder);
     }
 
     public void RemoveMemberFromGroup(string username)
     {
-        Group group = groups.First(groupname => groupname.Members.Contains(username));
+        Group group = groups.Find(groupname => groupname.Members.Contains(username));
         group.Members.Remove(username);
     }
 
     public bool CanCreateGroup =>
         !string.IsNullOrEmpty(UserName) && !string.IsNullOrEmpty(GroupInput)
-        && !groups.Any(group => group.Name.ToLower() == GroupInput.ToLower());
+        && !groups.Any(group => group.Name == GroupInput);
 
     public bool CanJoinGroup =>
          !string.IsNullOrEmpty(UserName) && Group == null;
@@ -159,6 +163,6 @@
         Group = null;
     }
 
-    public bool IsUserNameInUse() => groups.Any(group => group.Members.Any(member => member == UserName));
+    public bool IsUserNameInGroup(Group group) => group.Members.Any(member => member == UserName);
 
 }

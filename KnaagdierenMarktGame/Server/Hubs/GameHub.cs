@@ -1,8 +1,5 @@
 ﻿using KnaagdierenMarktGame.Shared;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.Extensions.Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,7 +12,7 @@ namespace KnaagdierenMarktGame.Server.Hubs
     public class GameHub : Hub
     {
         private static List<Group> _groups = new List<Group>();
-        private static Dictionary<string, string> _usernameConnectionIds = new Dictionary<string, string>();
+        private static Dictionary<string, KeyValuePair<string, Group>> _connectionIdToUsernamesAndGroups = new Dictionary<string, KeyValuePair<string, Group>>();
         public override Task OnConnectedAsync()
         {
             Clients.Caller.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.InitGroups, Objects = { _groups } });
@@ -31,9 +28,9 @@ namespace KnaagdierenMarktGame.Server.Hubs
         {
             if (GetGroupByName(groupName) is null)
             {
-                await AddReferencesToConnectionId(groupName, userName);
                 Group newGroup = new Group() { Name = groupName, Members = { userName } };
                 _groups.Add(newGroup);
+                await AddReferencesToConnectionId(newGroup, userName);
 
                 await Clients.All.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.NewGroup, Objects = { newGroup } });
             }
@@ -43,12 +40,12 @@ namespace KnaagdierenMarktGame.Server.Hubs
         {
             if (GetGroupByName(groupName) is Group group)
             {
-                await AddReferencesToConnectionId(groupName, userName);
                 group.Members.Add(userName);
+                await AddReferencesToConnectionId(group, userName);
 
                 await Clients.All.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.JoinedGroup, Objects = { group } });
 
-                if (group.Members.Count >= 3)
+                if (group.Members.Count >= Constants.MaxPlayers)
                 {
                     // temporary delay
                     Thread.Sleep(1000);
@@ -57,76 +54,52 @@ namespace KnaagdierenMarktGame.Server.Hubs
             }
         }
 
-        private async Task AddReferencesToConnectionId(string groupName, string userName)
+        private async Task AddReferencesToConnectionId(Group group, string userName)
         {
-            if (!_usernameConnectionIds.ContainsKey(Context.ConnectionId))
+            if (!_connectionIdToUsernamesAndGroups.ContainsKey(Context.ConnectionId))
             {
-                _usernameConnectionIds.Add(Context.ConnectionId, userName);
+                _connectionIdToUsernamesAndGroups.Add(Context.ConnectionId, new KeyValuePair<string, Group>(userName,group));
             }
-            await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
+            await Groups.AddToGroupAsync(Context.ConnectionId, group.Name);
         }
 
-        private static Group GetGroupByName(string groupName)
-        {
-            if (_groups.FirstOrDefault(group => group.Name == groupName) is Group group)
-            {
-                return group;
-            }
-            else
-            {
-                return null;
-            }
-        }
+        private static Group GetGroupByName(string groupName) => _groups.Find(group => group.Name == groupName);
 
         private async Task StartGame(string groupName, Group changedGroup)
         {
+            List<string> playerOrder = GetPlayerOrder(new List<string>(changedGroup.Members)).ToList();
+            await Clients.Group(groupName).SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.StartGame, Objects = { playerOrder } });
+        }
+
+        public IEnumerable<string> GetPlayerOrder(List<string> remainingPlayers)
+        {
             Random rnd = new Random();
-            string randomlyChosenStartPlayer = changedGroup.Members[rnd.Next(0, changedGroup.Members.Count)];
-            _groups.Remove(changedGroup);
-            await Clients.Group(groupName).SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.StartGame, Objects = { randomlyChosenStartPlayer } });
-        }
-
-        public async Task LeaveGroup(string user)
-        {
-            if (GetUserGroup(user) is Group userGroup)
+            while (remainingPlayers.Count() > 0)
             {
-                userGroup.Members.Remove(user);
-                await Clients.Others.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.LeftGroup, Objects = { user } } );
-                if (userGroup.Members.Count < 1)
-                {
-                    await Clients.All.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.GroupDeleted, Objects = { userGroup } });
-                    _groups.Remove(userGroup);
-                }
+                string chosenPlayer = remainingPlayers[rnd.Next(0, remainingPlayers.Count)];
+                remainingPlayers.Remove(chosenPlayer);
+                yield return chosenPlayer;
             }
         }
 
-        public async Task SendMessageToGroup(string groupName, string user, string message)
+        public async Task LeaveGroup(string user, Group userGroup)
         {
-            await Clients.Group(groupName).SendAsync("ReceiveMessage", user, message);
-        }
-
-        public Group GetUserGroup(string userName)
-        {
-            foreach (var group in _groups)
+            userGroup.Members.Remove(user);
+            await Clients.Others.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.LeftGroup, Objects = { user } } );
+            if (userGroup.Members.Count < 1)
             {
-                if (group.Members.Any(user => user == userName))
-                {
-                    return group;
-                }
+                await Clients.All.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.GroupDeleted, Objects = { userGroup } });
+                _groups.Remove(userGroup);
             }
-            return null;
         }
 
         public override Task OnDisconnectedAsync(Exception exception)
         {
-            if (_usernameConnectionIds.ContainsKey(Context.ConnectionId))
+            if (_connectionIdToUsernamesAndGroups.ContainsKey(Context.ConnectionId))
             {
-                string leftUser = _usernameConnectionIds[Context.ConnectionId];
-                Group leftUserGroup = GetUserGroup(leftUser);
-                if (leftUserGroup != null)
-                {
-                    LeaveGroup(leftUser);
-                }
+                KeyValuePair<string, Group> leftUser = _connectionIdToUsernamesAndGroups[Context.ConnectionId];
+                LeaveGroup(leftUser.Key, leftUser.Value);
+                _connectionIdToUsernamesAndGroups.Remove(Context.ConnectionId);
             }
             return base.OnDisconnectedAsync(exception);
         }
