@@ -15,7 +15,7 @@
         {
             <button @onclick="OnAuctionClick">Auction</button>
         }
-        @if (CanPlayerTradeAnimalCards(gameState.User))
+        @if (CanUserTradeAnimalCards())
         {
             <button @onclick="OnTradeClick">Trade</button>
         }
@@ -46,15 +46,8 @@
         await gameConnection.HubConnection.SendAsync("SendMessage", message);
     }
 
-    public bool CanPlayerTradeAnimalCards(Player player)
-    {
-        foreach (AnimalCard card in player.AnimalCards)
-        {
-            if (player.AnimalCards.Count(animalCard => animalCard.AnimalType == card.AnimalType) < 4)
-            {
-                return true;
-            }
-        }
-        return false;
-    }
+    public bool HasUserSameAnimalCard(AnimalCard animalCard) => gameState.User.AnimalCards.Any(animalcard => animalcard.AnimalType == animalCard.AnimalType);
+
+    public bool CanUserTradeAnimalCards() => gameState.Players.Where(player=> player.Name != gameState.User.Name).Any(player => player.AnimalCards.Any(AnimalCard => HasUserSameAnimalCard(AnimalCard)));
+
 }

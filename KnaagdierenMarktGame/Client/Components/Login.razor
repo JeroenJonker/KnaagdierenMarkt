@@ -4,20 +4,18 @@
 @inject GameConnection gameConnection
 @inject GameState gameState
 @using Newtonsoft.Json
-@using Microsoft.Extensions.Localization
-@using KnaagdierenMarktGame.Client.Resources
 
-<h1 class="Component-header">Login</h1>
+<Header Title="@(Group == null ? "Login" : "Lobby")" SmallHeaderText="@(Group == null ? "" : $"Waiting for {(Constants.MaxPlayers - Group.Members.Count())} more player(s)")"/>
 @if (Group == null)
 {
     <div class="form-group AlignTextCenter">
         <label>
             User:
-            <input class="clean-input" @bind="UserName" @bind:event="oninput" required placeholder="username" />
+            <input class="clean-input" @bind="UserName" @bind:event="oninput" required placeholder="username"  />
         </label>
     </div>
 
-    if (!string.IsNullOrEmpty(UserName))
+    if (IsViableUsername(UserName))
     {
         <div class="GroupDecision-container">
             <div class="CreateGroup-container form-group">
@@ -37,10 +35,9 @@
                     if (group.Members.Count() < Constants.MaxPlayers)
                     {
                     <li>
-                        @($"{group.Name} {group.Members.Count()} / {Constants.MaxPlayers}")
-                        @if (Group == null && !IsUserNameInGroup(group))
+                        @if (Group == null)
                         {
-                            <button @onclick="() => JoinGroup(group)" disabled="@(!CanJoinGroup)">@group.Name @group.Members.Count() / 2</button>
+                        <button @onclick="() => JoinGroup(group)" disabled="@(!CanJoinGroup)">@($"{group.Name} {group.Members.Count()} / {Constants.MaxPlayers}")</button>
                         }
                         @*change name to join group*@
                     </li>
@@ -53,8 +50,12 @@
 }
 @if (Group != null)
 {
-<div>
-    <p>@Group.Name @Group.Members.Count() / @Constants.MaxPlayers</p>
+<div class="LoginWaitingScreen-container">
+    <h5>@($"{Group.Name} ")</h5>
+    @foreach (string member in Group.Members)
+    {
+        <li>@member</li>
+    }
     <button @onclick="LeaveGroup">Leave</button>
 </div>
 
@@ -74,6 +75,7 @@
 
     protected async Task HandleMessage(Message message)
     {
+        System.Diagnostics.Debug.WriteLine(message.MessageType.ToString());
         switch (message.MessageType)
         {
             case MessageType.InitGroups: OnInitGroups(message); break;
@@ -94,11 +96,11 @@
     public void OnNewGroup(Message message)
     {
         Group newGroup = JsonConvert.DeserializeObject<Group>(message.Objects[0].ToString());
+        groups.Add(newGroup);
         if (newGroup.Members.First() == UserName)
         {
             Group = newGroup;
         }
-        groups.Add(newGroup);
     }
 
     public void OnJoinedGroup(Message message)
@@ -112,7 +114,7 @@
 
     public void OnLeftGroup(Message message)
     {
-        string leftUser = JsonConvert.DeserializeObject<string>(message.Objects[0].ToString());
+        string leftUser = message.Objects[0].ToString();
         RemoveMemberFromGroup(leftUser);
     }
 
@@ -125,7 +127,6 @@
 
     public void OnStartGame(Message message)
     {
-        //string startPlayer = message.Objects[0].ToString();
         List<string> playerOrder = JsonConvert.DeserializeObject<List<string>>(message.Objects[0].ToString());
         gameState.GameSetup(UserName, Group.Members, playerOrder);
     }
@@ -158,11 +159,11 @@
 
     async Task LeaveGroup()
     {
-        await gameConnection.HubConnection.SendAsync("LeaveGroup", UserName);
+        await gameConnection.HubConnection.SendAsync("LeaveGroup", UserName, Group);
         RemoveMemberFromGroup(UserName);
         Group = null;
     }
 
-    public bool IsUserNameInGroup(Group group) => group.Members.Any(member => member == UserName);
+    public bool IsViableUsername(string username) => !string.IsNullOrEmpty(UserName) && !groups.Any(group => group.Members.Contains(username));
 
 }

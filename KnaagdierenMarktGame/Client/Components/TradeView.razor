@@ -7,7 +7,7 @@
 @inject GameState gameState
 @inject GameConnection gameConnection
 
-<Header Title="Buy over" MainTextType="@(IsCurrentPlayerUser ? "BuyOver_CurrentPlayer" : "BuyOver_Others")"/>
+<Header Title="Buy over" MainTextType="@(IsCurrentPlayerUser ? "BuyOver_CurrentPlayer" : "BuyOver_Others")" />
 
 
 @if (ChosenAnimalCard == null && gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer)
@@ -16,10 +16,18 @@
     {
         @if (player.Name != gameState.User.Name && GetTradeAbleAnimalCards(player) is List<AnimalCard> tradeAbleCards && tradeAbleCards.Count() > 0)
         {
-            <p>@player.Name</p>
+            <h5>@player.Name</h5>
             @foreach (var animalCard in tradeAbleCards.GroupBy(card => card))
             {
-                <button @onclick="() => BuyOverAnimalCard(player, animalCard.Key)">@animalCard.Key.AnimalType.ToString():@animalCard.Key.Value amount: @tradeAbleCards.Sum(card => card.AnimalType == animalCard.Key.AnimalType ? 1 : 0)</button>
+                <div class="PlayerAnimalCard-container" @onclick="() => BuyOverAnimalCard(player, animalCard.Key)">
+                    <img class="PlayerAnimalCards-item LittleAnimalCard-image" src=@($"/Images/{animalCard.Key.AnimalType.ToString()}.png") />
+                    <div class="PlayerAnimalCards-item">
+                        <h5>@animalCard.Key.AnimalType</h5>
+                        <p>@(animalCard.Key.Value)</p>
+                        <p>@animalCard.Count().ToString() / 4</p>
+                    </div>
+                </div>
+                @*<button @onclick="() => BuyOverAnimalCard(player, animalCard.Key)">@animalCard.Key.AnimalType.ToString():@animalCard.Key.Value amount: @tradeAbleCards.Sum(card => card.AnimalType == animalCard.Key.AnimalType ? 1 : 0)</button>*@
             }
         }
     }
@@ -27,17 +35,16 @@
 
 @if (ChosenAnimalCard != null)
 {
-    <p>Chosen card:</p>
-    <p>@ChosenAnimalCard.AnimalType</p>
-    <p>From:</p>
-    <p>@ChosenPlayer.Name</p>
+    <p>Buying @ChosenAnimalCard.AnimalType from @ChosenPlayer.Name </p>
 }
 
 @if (ShowMoneySelectors)
 {
     <MoneySelectors MoneyCards="@gameState.User.MoneyCards" @bind-ChosenMoneyCards="ChosenMoneyCards" />
-    <p>Total amount of money: @ChosenMoneyCards.Sum(a => (a.Key * a.Value))</p>
-    <p>Total amount of cards: @ChosenMoneyCards.Count()</p>
+    <p class="AlignTextRight">Total amount of cards: @ChosenMoneyCards.Count()</p>
+    <p class="AlignTextRight">Current total: $@gameState.User.MoneyCards.Sum()</p>
+    <p class="AlignTextRight Underline">Payment: -$@ChosenMoneyCards.Sum(a => (a.Key * a.Value))</p>
+    <p class="AlignTextRight">New Total: $@(gameState.User.MoneyCards.Sum() - ChosenMoneyCards.Sum(a => (a.Key * a.Value))) </p>
     if (ChosenMoneyCards.Count() > 0 && (gameState.CurrentPlayer.Name == gameState.User.Name || CurrentPlayerOfferedMoneyCards.Count() > 0))
     {
         <button @onclick="BuyOverOffer">Pay</button>
@@ -48,6 +55,7 @@
 @code {
     public bool IsCurrentPlayerUser => gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer;
 
+    public bool HasTriedToBuyOutBefore = false;
     public bool ShowMoneySelectors { get; set; } = false;
     public Dictionary<int, int> ChosenMoneyCards = new Dictionary<int, int>();
     public AnimalCard ChosenAnimalCard { get; set; }
@@ -85,35 +93,55 @@
         if (gameState.CurrentPlayer.Name == winner)
         {
             UpdatePlayersCards(gameState.CurrentPlayer, ChosenPlayer, CurrentPlayerOfferedMoneyCards);
+            gameState.SendNextPlayerMessage();
+            gameState.CurrentState = Enums.States.ChooseAction;
         }
         else if (ChosenPlayer.Name == winner)
         {
             UpdatePlayersCards(ChosenPlayer, gameState.CurrentPlayer, ChosenPlayerOfferedMoneyCards);
+            gameState.SendNextPlayerMessage();
+            gameState.CurrentState = Enums.States.ChooseAction;
         }
-        else
+        else if (winner == "")
         {
-            //bij gelijk spel...
+            if (HasTriedToBuyOutBefore == true)
+            {
+                UpdatePlayersAnimalCards(gameState.CurrentPlayer, ChosenPlayer);
+                gameState.SendNextPlayerMessage();
+                gameState.CurrentState = Enums.States.ChooseAction;
+            }
+            else
+            {
+                HasTriedToBuyOutBefore = true;
+                BuyOverAnimalCard(ChosenPlayer, ChosenAnimalCard);
+            }
         }
-        gameState.SendNextPlayerMessage();
-        gameState.CurrentState = Enums.States.ChooseAction;
     }
 
     public void UpdatePlayersCards(Player winningPlayer, Player losingPlayer, List<int> winningMoneyCards)
     {
+        UpdatePlayersAnimalCards(winningPlayer, losingPlayer);
+        UpdatePlayersMoneyCards(winningPlayer, losingPlayer, winningMoneyCards);
+    }
+
+    public void UpdatePlayersMoneyCards(Player winningPlayer, Player losingPlayer, List<int> winningMoneyCards)
+    {
+        ChosenPlayer.MoneyCards = SubtractListFromList(winningPlayer.MoneyCards, ChosenPlayerOfferedMoneyCards);
+        ChosenPlayer.MoneyCards.AddRange(CurrentPlayerOfferedMoneyCards);
+        gameState.CurrentPlayer.MoneyCards = SubtractListFromList(winningPlayer.MoneyCards, CurrentPlayerOfferedMoneyCards);
+        gameState.CurrentPlayer.MoneyCards.AddRange(ChosenPlayerOfferedMoneyCards);
+    }
+
+    public void UpdatePlayersAnimalCards(Player winningPlayer, Player losingPlayer)
+    {
         if (winningPlayer.AnimalCards.Sum(animalCard => animalCard.AnimalType == ChosenAnimalCard.AnimalType ? 1 : 0) == 2 &&
-            losingPlayer.AnimalCards.Sum(animalCard => animalCard.AnimalType == ChosenAnimalCard.AnimalType ? 1 : 0) == 2)
+        losingPlayer.AnimalCards.Sum(animalCard => animalCard.AnimalType == ChosenAnimalCard.AnimalType ? 1 : 0) == 2)
         {
             winningPlayer.AnimalCards.Add(ChosenAnimalCard);
             losingPlayer.AnimalCards.Remove(ChosenAnimalCard);
         }
         winningPlayer.AnimalCards.Add(ChosenAnimalCard);
         losingPlayer.AnimalCards.Remove(ChosenAnimalCard);
-
-        ChosenPlayer.MoneyCards = SubtractListFromList(winningPlayer.MoneyCards, ChosenPlayerOfferedMoneyCards);
-        ChosenPlayer.MoneyCards.AddRange(CurrentPlayerOfferedMoneyCards);
-        gameState.CurrentPlayer.MoneyCards = SubtractListFromList(winningPlayer.MoneyCards, CurrentPlayerOfferedMoneyCards);
-        gameState.CurrentPlayer.MoneyCards.AddRange(ChosenPlayerOfferedMoneyCards);
-
     }
 
     public List<int> SubtractListFromList(List<int> listA, List<int> listB)

@@ -84,6 +84,7 @@ namespace KnaagdierenMarktGame.Server.Hubs
 
         public async Task LeaveGroup(string user, Group userGroup)
         {
+            userGroup = _groups.Find(group => group.Name == userGroup.Name); //find 
             userGroup.Members.Remove(user);
             await Clients.Others.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.LeftGroup, Objects = { user } } );
             if (userGroup.Members.Count < 1)
