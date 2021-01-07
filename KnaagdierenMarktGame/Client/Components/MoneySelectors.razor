@@ -15,9 +15,6 @@
     [Parameter]
     public EventCallback<Dictionary<int, int>> ChosenMoneyCardsChanged { get; set; }
 
-    //public int TotalAmout(int MoneyValue) => 0 + MoneyCards.Aggregate((card, total) => card == MoneyValue ? total++ : total);
-
-
     public async Task UpdateChosenMoneyCards(KeyValuePair<int,int> chosenMoneyCards)
     {
         int Amount = chosenMoneyCards.Value;

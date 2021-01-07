@@ -7,7 +7,6 @@
 @inject GameConnection gameConnection
 @inject GameState gameState
 
-@*@implements IDisposable*@
 @inject IStringLocalizer<HeaderResource> headerResources
 
 <div class="Component-header">
@@ -18,45 +17,8 @@
 
 @code {
 
-    //public string BigHeaderText { get; set; }
     [Parameter] public string SmallHeaderText { get; set; }
     [Parameter] public string Description { get; set; }
     [Parameter] public string Title { get; set; }
     [Parameter] public string MainTextType { get; set; }
-    //public Enums.States CurrentState { get; set; }
-
-    //protected override void OnInitialized()
-    //{
-    //    gameConnection.OnNewGameMessage += HandleMessage;
-    //    gameState.OnPropertyChanged += UpdateScreen;
-    //    base.OnInitialized();
-    //}
-
-    //public async Task UpdateScreen(object ob) => CurrentState = gameState.CurrentState;
-
-    //protected override Task OnInitializedAsync()
-    //{
-    //    return base.OnInitializedAsync();
-    //}
-
-    //protected async Task HandleMessage(Message message)
-    //{
-    //    //CurrentMessageType = message.MessageType;
-    //    //switch (message.MessageType)
-    //    //{
-    //    //    case MessageType.BeginCountdown: break;
-    //    //    case MessageType.MakeAuctionOffer: break;
-    //    //    case MessageType.AcceptAuctionOffer: break;
-    //    //    case MessageType.PayOffer: break;
-    //    //    case MessageType.PulledAuctionCard: break;
-    //    //    case MessageType.FailedOffer: break;
-    //    //}
-    //    StateHasChanged();
-    //}
-
-    //public void Dispose()
-    //{
-    //    gameConnection.OnNewGameMessage -= HandleMessage;
-    //    gameState.OnPropertyChanged -= UpdateScreen;
-    //}
 }

@@ -63,10 +63,6 @@ else if (gameState.CurrentState == Enums.States.Trade)
     public void OnNextPlayer(Message message)
     {
         gameState.CurrentPlayer = gameState.Players.Find(player => player.Name == message.Objects[0].ToString());
-        //if (!gameState.PlayerOrder.Contains(gameState.CurrentPlayer.Name))
-        //{
-        //    gameState.PlayerOrder.Add(gameState.CurrentPlayer.Name);
-        //}
     }
 
     public async Task UpdateScreen(object ob) => StateHasChanged();

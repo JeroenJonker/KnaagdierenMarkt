@@ -27,7 +27,6 @@
                         <p>@animalCard.Count().ToString() / 4</p>
                     </div>
                 </div>
-                @*<button @onclick="() => BuyOverAnimalCard(player, animalCard.Key)">@animalCard.Key.AnimalType.ToString():@animalCard.Key.Value amount: @tradeAbleCards.Sum(card => card.AnimalType == animalCard.Key.AnimalType ? 1 : 0)</button>*@
             }
         }
     }
@@ -202,11 +201,7 @@
 
     public async Task BuyOverAnimalCard(Player player, AnimalCard animalCard)
     {
-        //ChosenAnimalCard = animalCard;
-        //ChosenPlayer = player;
         ShowMoneySelectors = true;
-
-        // heeft speler van wie de kaart wordt gekocht nodig
         Message message = new Message() { MessageType = MessageType.BuyOutCard, Sender = gameState.User.Name, Target = player.Name };
         message.Objects.Add(animalCard);
         await gameConnection.HubConnection.SendAsync("SendMessage", message);
@@ -214,7 +209,17 @@
 
     public async Task BuyOverOffer()
     {
-        // alles gelijk oversturen of eerst de hoeveelheid?
+        List<int> offeredMoneyCards = ConvertChosenMoneyCardsToListOfIntegers();
+
+        Message message = new Message() { MessageType = MessageType.BuyOutOffer, Sender = gameState.User.Name, 
+            Target = (gameState.User.Name == gameState.CurrentPlayer.Name ? ChosenPlayer.Name : gameState.CurrentPlayer.Name) };
+        message.Objects.Add(offeredMoneyCards);
+        ShowMoneySelectors = false;
+        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+    }
+
+    public List<int> ConvertChosenMoneyCardsToListOfIntegers()
+    {
         List<int> offeredMoneyCards = new List<int>();
         foreach (KeyValuePair<int, int> money in ChosenMoneyCards)
         {
@@ -223,10 +228,7 @@
                 offeredMoneyCards.Add(money.Key);
             }
         }
-        Message message = new Message() { MessageType = MessageType.BuyOutOffer, Sender = gameState.User.Name, Target = (gameState.User.Name == gameState.CurrentPlayer.Name ? ChosenPlayer.Name : gameState.CurrentPlayer.Name) };
-        message.Objects.Add(offeredMoneyCards);
-        ShowMoneySelectors = false;
-        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+        return offeredMoneyCards;
     }
 
     public void Dispose()

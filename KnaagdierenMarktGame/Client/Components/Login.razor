@@ -39,7 +39,6 @@
                         {
                         <button @onclick="() => JoinGroup(group)" disabled="@(!CanJoinGroup)">@($"{group.Name} {group.Members.Count()} / {Constants.MaxPlayers}")</button>
                         }
-                        @*change name to join group*@
                     </li>
                     }
                 }

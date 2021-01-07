@@ -4,7 +4,7 @@
 
 @inject GameState gameState
 @inject GameConnection gameConnection
-@*Title="@(IsCurrentPlayerUser ? "ChooseAction_CurrentPlayer" : "ChooseAction_Others")"*@
+
 <Header Title="@(IsCurrentPlayerUser ? "Choose an action" : "Waiting till action is chosen")" MainTextType="@(IsCurrentPlayerUser ? "ChooseAction_CurrentPlayer" : "ChooseAction_Others")"
         SmallHeaderText="@(IsCurrentPlayerUser ? "" : gameState.CurrentPlayer.Name)" />
 
@@ -17,7 +17,7 @@
         }
         @if (CanUserTradeAnimalCards())
         {
-            <button @onclick="OnTradeClick">Trade</button>
+            <button @onclick="OnBuyOverClick">Buy over</button>
         }
     </div>
 }
@@ -40,7 +40,7 @@
         await gameConnection.HubConnection.SendAsync("SendMessage", message);
     }
 
-    public async Task OnTradeClick()
+    public async Task OnBuyOverClick()
     {
         Message message = new Message() { MessageType = MessageType.Trade, Sender = gameState.User.Name };
         await gameConnection.HubConnection.SendAsync("SendMessage", message);
