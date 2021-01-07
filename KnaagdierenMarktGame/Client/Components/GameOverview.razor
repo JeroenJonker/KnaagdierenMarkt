@@ -11,7 +11,7 @@
 }
 else if (gameState.CurrentState == Enums.States.ChooseAction)
 {
-    <ChooseActionScreen/>
+    <ChooseAction/>
 }
 else if (gameState.CurrentState == Enums.States.Auction || gameState.CurrentState == Enums.States.Auction_Paying)
 {
@@ -19,7 +19,7 @@ else if (gameState.CurrentState == Enums.States.Auction || gameState.CurrentStat
 }
 else if (gameState.CurrentState == Enums.States.Trade)
 {
-    <TradeView />
+    <BuyOver />
 }
 
 <div class="PlayerOverview-container">
@@ -35,11 +35,9 @@ else if (gameState.CurrentState == Enums.States.Trade)
     }
 </div>
 
-<p>@gameState.RemainingAuctionCards.Count().ToString()</p>
-
 @code
 {
-    public bool IsEndOfGame => !gameState.Players.Any(player => CanPlayerTradeAnimalCards(player)) && gameState.RemainingAuctionCards.Count() < 1;
+    public bool IsEndOfGame => (!gameState.Players.Any(player => CanPlayerTradeAnimalCards(player)) && gameState.RemainingAuctionCards.Count() < 1) || gameState.Players.Count() < 2;
 
     protected override void OnInitialized()
     {

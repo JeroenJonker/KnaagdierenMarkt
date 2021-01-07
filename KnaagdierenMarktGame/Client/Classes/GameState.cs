@@ -48,11 +48,6 @@ namespace KnaagdierenMarktGame.Client.Classes
 
         public Timer Timer { get; set; }
 
-        //public void TestMessage()
-        //{
-        //    System.Diagnostics.Debug.WriteLine("GameStateTest");
-        //}
-
         private readonly GameConnection gameConnection;
 
         public GameState(GameConnection _gameConnection)
@@ -82,7 +77,6 @@ namespace KnaagdierenMarktGame.Client.Classes
             SetupAuctionCards();
             CurrentState = States.ChooseAction;
             StartConnectionChecker();
-            //OnPropertyChanged?.Invoke(CurrentPlayer);
         }
 
         public void StartConnectionChecker()
@@ -118,16 +112,11 @@ namespace KnaagdierenMarktGame.Client.Classes
                 DetermineNewCurrentPlayer(player);
                 CurrentState = States.ChooseAction;
                 Players.Remove(player);
-                //PlayerOrder.Remove(player.Name);
                 foreach (AnimalCard card in player.AnimalCards)
                 {
                     RemainingAuctionCards.Add(card);
                 }
                 AddCompensationMoneyCardsToPlayers();
-            }
-            else
-            {
-                // weet nog niet D:
             }
         }
 

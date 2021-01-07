@@ -13,7 +13,7 @@
 }
 else
 {
-    <Game />
+    <GameOverview />
 }
 
 
@@ -26,10 +26,6 @@ else
     }
 
     public async Task UpdateScreen(object ob) => StateHasChanged();
-
-    public bool IsConnected =>
-    gameConnection.HubConnection.State == HubConnectionState.Connected;
-
 
     public void Dispose()
     {
