@@ -1,11 +1,12 @@
 ﻿@using Microsoft.AspNetCore.SignalR.Client
 @using KnaagdierenMarktGame.Shared
 @using KnaagdierenMarktGame.Client.Classes
+@using KnaagdierenMarktGame.Shared.Enums
 @using Newtonsoft.Json
 @implements IDisposable
 
 @inject GameState gameState
-@inject GameConnection gameConnection
+@inject PeerConnection peerConnection
 
 <Header Title="Buy over" MainTextType="@(IsCurrentPlayerUser ? "BuyOver_CurrentPlayer" : "BuyOver_Others")" />
 
@@ -16,14 +17,14 @@
     {
         @if (player.Name != gameState.User.Name && GetTradeAbleAnimalCards(player) is List<AnimalCard> tradeAbleCards && tradeAbleCards.Count() > 0)
         {
-            <h5>@player.Name</h5>
-            @foreach (var animalCard in tradeAbleCards.GroupBy(card => card))
+            <h5>Available from @player.Name</h5>
+            @foreach (var animalCard in tradeAbleCards.GroupBy(card => card.AnimalType))
             {
-                <div class="PlayerAnimalCard-container" @onclick="() => BuyOverAnimalCard(player, animalCard.Key)">
-                    <img class="PlayerAnimalCards-item LittleAnimalCard-image" src=@($"/Images/{animalCard.Key.AnimalType.ToString()}.png") />
+                <div class="PlayerAnimalCard-container" @onclick="() => BuyOverAnimalCard(player, new AnimalCard( animalCard.Key, (int)animalCard.Key))">
+                    <img class="PlayerAnimalCards-item LittleAnimalCard-image" src=@($"/Images/{animalCard.Key.ToString()}.png") />
                     <div class="PlayerAnimalCards-item">
-                        <h5>@animalCard.Key.AnimalType</h5>
-                        <p>@(animalCard.Key.Value)</p>
+                        <h5>@animalCard.Key.ToString()</h5>
+                        <p>@((int)animalCard.Key)</p>
                         <p>@animalCard.Count().ToString() / 4</p>
                     </div>
                 </div>
@@ -68,7 +69,7 @@
 
     protected override void OnInitialized()
     {
-        gameConnection.OnNewGameMessage += HandleMessage;
+        peerConnection.OnNewGameMessage += HandleMessage;
         gameState.OnPropertyChanged += UpdateScreen;
         base.OnInitialized();
     }
@@ -91,13 +92,13 @@
         string winner = message.Objects[0].ToString();
         if (gameState.CurrentPlayer.Name == winner)
         {
-            UpdatePlayersCards(gameState.CurrentPlayer, ChosenPlayer, CurrentPlayerOfferedMoneyCards);
+            UpdatePlayersCards(gameState.CurrentPlayer, ChosenPlayer);
             gameState.SendNextPlayerMessage();
             gameState.CurrentState = Enums.States.ChooseAction;
         }
         else if (ChosenPlayer.Name == winner)
         {
-            UpdatePlayersCards(ChosenPlayer, gameState.CurrentPlayer, ChosenPlayerOfferedMoneyCards);
+            UpdatePlayersCards(ChosenPlayer, gameState.CurrentPlayer);
             gameState.SendNextPlayerMessage();
             gameState.CurrentState = Enums.States.ChooseAction;
         }
@@ -117,17 +118,17 @@
         }
     }
 
-    public void UpdatePlayersCards(Player winningPlayer, Player losingPlayer, List<int> winningMoneyCards)
+    public void UpdatePlayersCards(Player winningPlayer, Player losingPlayer)
     {
         UpdatePlayersAnimalCards(winningPlayer, losingPlayer);
-        UpdatePlayersMoneyCards(winningPlayer, losingPlayer, winningMoneyCards);
+        UpdatePlayersMoneyCards(winningPlayer, losingPlayer);
     }
 
-    public void UpdatePlayersMoneyCards(Player winningPlayer, Player losingPlayer, List<int> winningMoneyCards)
+    public void UpdatePlayersMoneyCards(Player winningPlayer, Player losingPlayer)
     {
-        ChosenPlayer.MoneyCards = SubtractListFromList(winningPlayer.MoneyCards, ChosenPlayerOfferedMoneyCards);
+        ChosenPlayer.MoneyCards = SubtractListBFromListA(ChosenPlayer.MoneyCards, ChosenPlayerOfferedMoneyCards);
         ChosenPlayer.MoneyCards.AddRange(CurrentPlayerOfferedMoneyCards);
-        gameState.CurrentPlayer.MoneyCards = SubtractListFromList(winningPlayer.MoneyCards, CurrentPlayerOfferedMoneyCards);
+        gameState.CurrentPlayer.MoneyCards = SubtractListBFromListA(gameState.CurrentPlayer.MoneyCards, CurrentPlayerOfferedMoneyCards);
         gameState.CurrentPlayer.MoneyCards.AddRange(ChosenPlayerOfferedMoneyCards);
     }
 
@@ -143,7 +144,7 @@
         losingPlayer.AnimalCards.Remove(ChosenAnimalCard);
     }
 
-    public List<int> SubtractListFromList(List<int> listA, List<int> listB)
+    public List<int> SubtractListBFromListA(List<int> listA, List<int> listB)
     {
         foreach (int number in listB)
         {
@@ -157,8 +158,15 @@
 
     public void OnBuyOutCard(Message message)
     {
-        ChosenAnimalCard = JsonConvert.DeserializeObject<AnimalCard>(message.Objects[0].ToString());
-        ChosenPlayer = gameState.Players.First(player => player.Name == message.Target);
+        if (message.Objects[0] is AnimalCard)
+        {
+            ChosenAnimalCard = message.Objects[0] as AnimalCard;
+        }
+        else
+        {
+            ChosenAnimalCard = JsonConvert.DeserializeObject<AnimalCard>(message.Objects[0].ToString());
+        }
+        ChosenPlayer = gameState.Players.Find(player => player.Name == message.Target);
         if (ChosenPlayer.Name == gameState.User.Name)
         {
             ShowMoneySelectors = true;
@@ -169,11 +177,26 @@
     {
         if (message.Sender == ChosenPlayer.Name)
         {
-            ChosenPlayerOfferedMoneyCards = JsonConvert.DeserializeObject<List<int>>(message.Objects[0].ToString());
+            if (message.Objects[0] is List<int>)
+            {
+                ChosenPlayerOfferedMoneyCards = message.Objects[0] as List<int>;
+            }
+            else
+            {
+                ChosenPlayerOfferedMoneyCards = JsonConvert.DeserializeObject<List<int>>(message.Objects[0].ToString());
+            }
         }
         else
         {
-            CurrentPlayerOfferedMoneyCards = JsonConvert.DeserializeObject<List<int>>(message.Objects[0].ToString());
+            if (message.Objects[0] is List<int>)
+            {
+                CurrentPlayerOfferedMoneyCards = message.Objects[0] as List<int>;
+            }
+            else
+            {
+                CurrentPlayerOfferedMoneyCards = JsonConvert.DeserializeObject<List<int>>(message.Objects[0].ToString());
+            }
+
         }
         if (gameState.User.Name == gameState.CurrentPlayer.Name && message.Target == gameState.User.Name)
         {
@@ -196,7 +219,7 @@
         {
             message.Objects.Add("");
         }
-        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+        await peerConnection.SendMessageToPeers(message);
     }
 
     public async Task BuyOverAnimalCard(Player player, AnimalCard animalCard)
@@ -204,18 +227,21 @@
         ShowMoneySelectors = true;
         Message message = new Message() { MessageType = MessageType.BuyOutCard, Sender = gameState.User.Name, Target = player.Name };
         message.Objects.Add(animalCard);
-        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+        await peerConnection.SendMessageToPeers(message);
     }
 
     public async Task BuyOverOffer()
     {
         List<int> offeredMoneyCards = ConvertChosenMoneyCardsToListOfIntegers();
-
-        Message message = new Message() { MessageType = MessageType.BuyOutOffer, Sender = gameState.User.Name, 
-            Target = (gameState.User.Name == gameState.CurrentPlayer.Name ? ChosenPlayer.Name : gameState.CurrentPlayer.Name) };
+        Message message = new Message()
+        {
+            MessageType = MessageType.BuyOutOffer,
+            Sender = gameState.User.Name,
+            Target = (gameState.User.Name == gameState.CurrentPlayer.Name ? ChosenPlayer.Name : gameState.CurrentPlayer.Name)
+        };
         message.Objects.Add(offeredMoneyCards);
         ShowMoneySelectors = false;
-        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+        await peerConnection.SendMessageToPeers(message);
     }
 
     public List<int> ConvertChosenMoneyCardsToListOfIntegers()
@@ -233,7 +259,7 @@
 
     public void Dispose()
     {
-        gameConnection.OnNewGameMessage -= HandleMessage;
+        peerConnection.OnNewGameMessage -= HandleMessage;
         gameState.OnPropertyChanged -= UpdateScreen;
     }
 

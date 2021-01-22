@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
-namespace KnaagdierenMarktGame.Client.Classes
+namespace KnaagdierenMarktGame.Shared
 {
     public class Player : IEquatable<Player>
     {
@@ -15,9 +13,12 @@ namespace KnaagdierenMarktGame.Client.Classes
 
         public int AmountOfConnectionWarnings { get; set; } = 0;
 
-        public Player(string name)
+        public string PeerID { get; set; }
+
+        public Player(string name, string peerID)
         {
             Name = name;
+            PeerID = peerID;
         }
 
         public bool Equals(Player other)

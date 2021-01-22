@@ -4,7 +4,7 @@
 
 <Header Title="Final score" MainTextType="EndScreen" SmallHeaderText="@(PlayerScores.Aggregate((a, b) => b.Value < a.Value ? a : b ).Key.Name)" />
 
-@for (int x = 0; x < PlayerScores.Count(); x++)
+@for (int x = 1; x <= PlayerScores.Count(); x++)
 {
     <p>@($"{x} place: {PlayerScores[x].Key.Name} with {PlayerScores[x].Value} points")</p>
 }
@@ -22,7 +22,7 @@
             int score = differentAnimalCards.Sum(AnimalCard => AnimalCard.Value) * differentAnimalCards.Count();
             PlayerScores.Add(new KeyValuePair<Player, int>(player, score));
         }
-        PlayerScores = PlayerScores.OrderBy(playerscore => playerscore.Value).ToList();
+        PlayerScores = PlayerScores.OrderByDescending(playerscore => playerscore.Value).ToList();
         return PlayerScores;
     }
 }

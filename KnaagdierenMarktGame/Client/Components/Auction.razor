@@ -2,13 +2,15 @@
 @using KnaagdierenMarktGame.Shared
 @using KnaagdierenMarktGame.Client.Classes
 @using Newtonsoft.Json
+@using KnaagdierenMarktGame.Shared.Enums
 @using System.Timers
-@inject GameConnection gameConnection
+
+@inject PeerConnection peerConnection
 @inject GameState gameState
 @implements IDisposable
 
-<Header Title="Auction" MainTextType="@(CountdownTimer == -1 || (CountdownTimer == 0 && HighestOffer == 0) ? "Auction_Bidding" : "Auction_Countdown" )" 
-                        Description="@(CountdownTimer > 0 ? CountdownTimer.ToString() : "")"  />
+<Header Title="Auction" MainTextType="@(CountdownTimer == -1 || (CountdownTimer == 0 && HighestOffer == 0) ? "Auction_Bidding" : "Auction_Countdown" )"
+        Description="@(CountdownTimer > 0 ? CountdownTimer.ToString() : "")" />
 
 @if (AuctionedAnimalCard != null && !ShowMoneySelectors)
 {
@@ -34,7 +36,7 @@
     </div>
 }
 
-@if (gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer && !ShowMoneySelectors && gameState.CurrentState != Enums.States.Auction_Paying )
+@if (gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer && !ShowMoneySelectors && gameState.CurrentState != Enums.States.Auction_Paying)
 {
     <div class="Auction-CurrentPlayerButtons-container">
         @if (AuctionedAnimalCard == null)
@@ -56,18 +58,18 @@
 
 @if (ShowMoneySelectors)
 {
-<div class="MoneySelectors-container">
-    <MoneySelectors MoneyCards="@gameState.User.MoneyCards" @bind-ChosenMoneyCards="ChosenMoneyCards" />
-    <p class="AlignTextRight">Current total: $@gameState.User.MoneyCards.Sum()</p>
-    <p class="AlignTextRight Underline">Payment: -$@ChosenMoneyCards.Sum(a => (a.Key * a.Value))</p>
-    <p class="AlignTextRight">New Total: $@(gameState.User.MoneyCards.Sum() - ChosenMoneyCards.Sum(a => (a.Key * a.Value))) </p>
-    @if (MatchesOffer)
-    {
-        <div class="AlignTextRight">
-            <button @onclick="OnPayOffer">Pay</button>
-        </div>
-    }
-</div>
+    <div class="MoneySelectors-container">
+        <MoneySelectors MoneyCards="@gameState.User.MoneyCards" @bind-ChosenMoneyCards="ChosenMoneyCards" />
+        <p class="AlignTextRight">Current total: $@gameState.User.MoneyCards.Sum()</p>
+        <p class="AlignTextRight Underline">Payment: -$@ChosenMoneyCards.Sum(a => (a.Key * a.Value))</p>
+        <p class="AlignTextRight">New Total: $@(gameState.User.MoneyCards.Sum() - ChosenMoneyCards.Sum(a => (a.Key * a.Value))) </p>
+        @if (MatchesOffer)
+        {
+            <div class="AlignTextRight">
+                <button @onclick="OnPayOffer">Pay</button>
+            </div>
+        }
+    </div>
 }
 
 
@@ -100,7 +102,7 @@
 
     protected override void OnInitialized()
     {
-        gameConnection.OnNewGameMessage += HandleMessage;
+        peerConnection.OnNewGameMessage += HandleMessage;
         gameState.OnPropertyChanged += UpdateScreen;
         base.OnInitialized();
     }
@@ -120,7 +122,7 @@
             case MessageType.MakeAuctionOffer: MakeActionOffer(message); break;
             case MessageType.AcceptAuctionOffer: AcceptOffer(message); break;
             case MessageType.PayOffer: PayOffer(message); break;
-            case MessageType.PulledAuctionCard: await PulledActionCard(message); break;
+            case MessageType.PulledAuctionCard: PulledActionCard(message); break;
             case MessageType.FailedOffer: OnFailedOffer(message); break;
         }
         StateHasChanged();
@@ -157,11 +159,17 @@
 
     public void PayOffer(Message message)
     {
-        List<int> payment = JsonConvert.DeserializeObject<List<int>>(message.Objects[0].ToString());
-
+        List<int> payment;
+        if (message.Objects[0] is List<int> correctpayment)
+        {
+            payment = correctpayment;
+        }
+        else
+        {
+            payment = JsonConvert.DeserializeObject<List<int>>(message.Objects[0].ToString());
+        }
         HandleSoldAuctionCard(payment, message.Sender);
         ResetAuction();
-
         if (gameState.CurrentPlayer.Name == gameState.User.Name)
         {
             gameState.SendNextPlayerMessage();
@@ -194,11 +202,18 @@
         StateHasChanged();
     }
 
-    public async Task PulledActionCard(Message message)
+    public void PulledActionCard(Message message)
     {
-        AuctionedAnimalCard = JsonConvert.DeserializeObject<AnimalCard>(message.Objects[0].ToString());
+        if (message.Objects[0] is AnimalCard)
+        {
+            AuctionedAnimalCard = message.Objects[0] as AnimalCard;
+        }
+        else
+        {
+            AuctionedAnimalCard = JsonConvert.DeserializeObject<AnimalCard>(message.Objects[0].ToString());
+        }
         gameState.RemainingAuctionCards.Remove(AuctionedAnimalCard);
-        if (AuctionedAnimalCard.AnimalType == Enums.AnimalTypes.Ezel)
+        if (AuctionedAnimalCard.AnimalType == AnimalTypes.Ezel)
         {
             DunkeyRule();
         }
@@ -206,7 +221,7 @@
 
     public void DunkeyRule()
     {
-        switch (AmountOfAnimalTypeCardInOwned(Enums.AnimalTypes.Ezel))
+        switch (AmountOfAnimalTypeCardInOwned(AnimalTypes.Ezel))
         {
             case 0: AddMoneyCardToAllPlayers(50); break;
             case 1: AddMoneyCardToAllPlayers(100); break;
@@ -215,7 +230,7 @@
         }
     }
 
-    public int AmountOfAnimalTypeCardInOwned(Enums.AnimalTypes animalType) =>
+    public int AmountOfAnimalTypeCardInOwned(AnimalTypes animalType) =>
         gameState.Players.Sum(player => player.AnimalCards.Count(animalCard => animalCard.AnimalType == animalType));
 
     public void AddMoneyCardToAllPlayers(int value)
@@ -275,7 +290,7 @@
         AuctionedAnimalCard = gameState.RemainingAuctionCards[random.Next(gameState.RemainingAuctionCards.Count())];
         Message message = new Message() { MessageType = MessageType.PulledAuctionCard, Sender = gameState.User.Name };
         message.Objects.Add(AuctionedAnimalCard);
-        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+        await peerConnection.SendMessageToPeers(message);
     }
 
     public async Task OnCountdownClick()
@@ -287,7 +302,7 @@
     {
         Message message = new Message() { MessageType = MessageType.MakeAuctionOffer, Sender = gameState.User.Name };
         message.Objects.Add(UserOffer);
-        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+        await peerConnection.SendMessageToPeers(message);
     }
 
     public async Task OnAcceptOffer()
@@ -300,7 +315,7 @@
         {
             Message message = new Message() { MessageType = MessageType.FailedOffer, Sender = gameState.User.Name };
             message.Objects.Add(HighestOfferPlayer.Name);
-            await gameConnection.HubConnection.SendAsync("SendMessage", message);
+            await peerConnection.SendMessageToPeers(message);
         }
     }
 
@@ -327,18 +342,18 @@
     {
         Message message = new Message() { MessageType = messageType, Sender = gameState.User.Name };
         message.Objects.Add(moneyCards);
-        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+        await peerConnection.SendMessageToPeers(message);
     }
 
     public async Task SendSimpleMessage(MessageType messageType)
     {
         Message message = new Message() { MessageType = messageType, Sender = gameState.User.Name };
-        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+        await peerConnection.SendMessageToPeers(message);
     }
 
     public void Dispose()
     {
-        gameConnection.OnNewGameMessage -= HandleMessage;
+        peerConnection.OnNewGameMessage -= HandleMessage;
         gameState.OnPropertyChanged -= UpdateScreen;
     }
 }

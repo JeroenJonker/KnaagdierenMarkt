@@ -24,8 +24,9 @@ namespace KnaagdierenMarktGame.Client
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = baseAdress });
 
-            builder.Services.AddSingleton(sp => new GameConnection(baseAdress));
+            builder.Services.AddSingleton(sp => new ServerConnection(baseAdress));
             builder.Services.AddSingleton<GameState>();
+            builder.Services.AddSingleton<PeerConnection>();
 
             builder.Services.AddLocalization(options => options.ResourcesPath = "");
 

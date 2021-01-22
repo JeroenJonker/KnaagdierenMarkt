@@ -3,7 +3,7 @@
 @using KnaagdierenMarktGame.Client.Classes
 
 @inject GameState gameState
-@inject GameConnection gameConnection
+@inject PeerConnection peerConnection
 
 @if (IsEndOfGame)
 {
@@ -37,33 +37,33 @@ else if (gameState.CurrentState == Enums.States.Trade)
 
 @code
 {
-    public bool IsEndOfGame => (!gameState.Players.Any(player => CanPlayerTradeAnimalCards(player)) && gameState.RemainingAuctionCards.Count() < 1) || gameState.Players.Count() < 2;
+        public bool IsEndOfGame => (!gameState.Players.Any(player => CanPlayerTradeAnimalCards(player)) && gameState.RemainingAuctionCards.Count() < 1) || gameState.Players.Count() < 2;
 
-    protected override void OnInitialized()
-    {
-        gameState.OnPropertyChanged += UpdateScreen;
-        gameConnection.OnNewGameMessage += HandleMessage;
-        base.OnInitialized();
-    }
-
-    protected async Task HandleMessage(Message message)
-    {
-        switch (message.MessageType)
+        protected override void OnInitialized()
         {
-            case MessageType.Auction: gameState.CurrentState = Enums.States.Auction; break;
-            case MessageType.Trade: gameState.CurrentState = Enums.States.Trade; break;
-            case MessageType.None: gameState.CurrentState = Enums.States.ChooseAction; break;
-            case MessageType.NextPlayer: OnNextPlayer(message); break;
+            gameState.OnPropertyChanged += UpdateScreen;
+            peerConnection.OnNewGameMessage += HandleMessage;
+            base.OnInitialized();
         }
-        StateHasChanged();
-    }
 
-    public void OnNextPlayer(Message message)
-    {
-        gameState.CurrentPlayer = gameState.Players.Find(player => player.Name == message.Objects[0].ToString());
-    }
+        protected async Task HandleMessage(Message message)
+        {
+            switch (message.MessageType)
+            {
+                case MessageType.Auction: gameState.CurrentState = Enums.States.Auction; break;
+                case MessageType.Trade: gameState.CurrentState = Enums.States.Trade; break;
+                case MessageType.None: gameState.CurrentState = Enums.States.ChooseAction; StateHasChanged(); break;
+                case MessageType.NextPlayer: OnNextPlayer(message); break;
+            }
+            StateHasChanged();
+        }
 
-    public async Task UpdateScreen(object ob) => StateHasChanged();
+        public void OnNextPlayer(Message message)
+        {
+            gameState.CurrentPlayer = gameState.Players.Find(player => player.Name == message.Objects[0].ToString());
+        }
+
+        public async Task UpdateScreen(object ob) { StateHasChanged(); }
 
     public bool CanPlayerTradeAnimalCards(Player player)
     {

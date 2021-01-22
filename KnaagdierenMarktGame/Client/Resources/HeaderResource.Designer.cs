@@ -187,6 +187,15 @@ namespace KnaagdierenMarktGame.Client.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to .
+        /// </summary>
+        public static string EndScreen_DescriptionText {
+            get {
+                return ResourceManager.GetString("EndScreen_DescriptionText", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to is the winner!.
         /// </summary>
         public static string EndScreen_SmallHeaderText {

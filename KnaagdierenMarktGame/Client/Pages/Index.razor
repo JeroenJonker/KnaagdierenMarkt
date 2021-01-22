@@ -1,11 +1,11 @@
 ﻿@page "/"
 @inject HttpClient Http
-@using Microsoft.AspNetCore.SignalR.Client
 @using KnaagdierenMarktGame.Client.Components
 @using KnaagdierenMarktGame.Client.Classes
-@inject GameConnection gameConnection
+@inject ServerConnection serverConnection
 @inject GameState gameState
 @implements IDisposable
+
 
 @if (gameState.CurrentState == Enums.States.Login)
 {
@@ -22,14 +22,14 @@ else
     protected override async Task OnInitializedAsync()
     {
         gameState.OnPropertyChanged += UpdateScreen;
-        await gameConnection.StartConnection();
+        await serverConnection.StartConnection();
     }
 
     public async Task UpdateScreen(object ob) => StateHasChanged();
 
     public void Dispose()
     {
-        _ = gameConnection.HubConnection.DisposeAsync();
+        _ = serverConnection.HubConnection.DisposeAsync();
     }
 
 }

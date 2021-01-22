@@ -159,6 +159,9 @@
   <data name="ChooseAction_Others_Title" xml:space="preserve">
     <value>Waiting till action is chosen</value>
   </data>
+  <data name="EndScreen_DescriptionText" xml:space="preserve">
+    <value />
+  </data>
   <data name="EndScreen_SmallHeaderText" xml:space="preserve">
     <value>is the winner!</value>
   </data>

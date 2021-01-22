@@ -19,16 +19,16 @@ namespace KnaagdierenMarktGame.Server.Hubs
             return base.OnConnectedAsync();
         }
 
-        public async Task SendMessage(Message message)
-        {
-            await Clients.All.SendAsync("ReceiveMessage", message);
-        }
+        //public async Task SendMessage(Message message)
+        //{
+        //    await Clients.All.SendAsync("ReceiveMessage", message);
+        //}
 
-        public async Task CreateGroup(string groupName, string userName)
+        public async Task CreateGroup(string groupName, string userName, string peerID)
         {
             if (GetGroupByName(groupName) is null)
             {
-                Group newGroup = new Group() { Name = groupName, Members = { userName } };
+                Group newGroup = new Group() { Name = groupName, Members = { new Player(userName, peerID) } };
                 _groups.Add(newGroup);
                 await AddReferencesToConnectionId(newGroup, userName);
 
@@ -36,11 +36,11 @@ namespace KnaagdierenMarktGame.Server.Hubs
             }
         }
 
-        public async Task JoinGroup(string groupName, string userName)
+        public async Task JoinGroup(string groupName, string userName, string peerID)
         {
             if (GetGroupByName(groupName) is Group group)
             {
-                group.Members.Add(userName);
+                group.Members.Add(new Player(userName, peerID ));
                 await AddReferencesToConnectionId(group, userName);
 
                 await Clients.All.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.JoinedGroup, Objects = { group } });
@@ -67,16 +67,16 @@ namespace KnaagdierenMarktGame.Server.Hubs
 
         private async Task StartGame(string groupName, Group changedGroup)
         {
-            List<string> playerOrder = GetPlayerOrder(new List<string>(changedGroup.Members)).ToList();
+            List<Player> playerOrder = GetPlayerOrder(new List<Player>(changedGroup.Members)).ToList();
             await Clients.Group(groupName).SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.StartGame, Objects = { playerOrder } });
         }
 
-        public IEnumerable<string> GetPlayerOrder(List<string> remainingPlayers)
+        public IEnumerable<Player> GetPlayerOrder(List<Player> remainingPlayers)
         {
             Random rnd = new Random();
             while (remainingPlayers.Count() > 0)
             {
-                string chosenPlayer = remainingPlayers[rnd.Next(0, remainingPlayers.Count)];
+                Player chosenPlayer = remainingPlayers[rnd.Next(0, remainingPlayers.Count)];
                 remainingPlayers.Remove(chosenPlayer);
                 yield return chosenPlayer;
             }
@@ -85,7 +85,8 @@ namespace KnaagdierenMarktGame.Server.Hubs
         public async Task LeaveGroup(string user, Group userGroup)
         {
             userGroup = _groups.Find(group => group.Name == userGroup.Name); //find 
-            userGroup.Members.Remove(user);
+            Player leftplayer = userGroup.Members.Find(player => player.Name == user);
+            userGroup.Members.Remove(leftplayer);
             await Clients.Others.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.LeftGroup, Objects = { user } } );
             if (userGroup.Members.Count < 1)
             {

@@ -1,10 +1,10 @@
-﻿using KnaagdierenMarktGame.Client.Enums;
+﻿using KnaagdierenMarktGame.Shared.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace KnaagdierenMarktGame.Client.Classes
+namespace KnaagdierenMarktGame.Shared
 {
     public class AnimalCard : IEquatable<AnimalCard>
     {

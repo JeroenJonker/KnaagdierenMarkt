@@ -1,27 +1,25 @@
 ﻿using KnaagdierenMarktGame.Shared;
 using Microsoft.AspNetCore.SignalR.Client;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace KnaagdierenMarktGame.Client.Classes
 {
-    public class GameConnection
+    public class ServerConnection
     {
         public HubConnection HubConnection { get; set; }
 
-        public delegate Task NewGameMessage(Message message);
+        public delegate Task NewServerMessage(Message message);
 
-        public event NewGameMessage OnNewGameMessage;
+        public event NewServerMessage OnServerMessage;
 
-        public GameConnection(Uri baseAdress)
+        public ServerConnection(Uri baseAdress)
         {
             HubConnection = new HubConnectionBuilder()
             .WithUrl((new Uri(baseAdress, "/gamehub")).AbsoluteUri)
             .Build();
 
-            HubConnection.On<Message>("ReceiveMessage", (message) => OnNewGameMessage?.Invoke(message));
+            HubConnection.On<Message>("ReceiveMessage", (message) => OnServerMessage?.Invoke(message));
         }
 
         public async Task StartConnection()

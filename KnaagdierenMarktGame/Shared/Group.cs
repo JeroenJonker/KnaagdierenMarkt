@@ -7,7 +7,7 @@ namespace KnaagdierenMarktGame.Shared
     public class Group : IEquatable<Group>
     {
         public string Name { get; set; }
-        public List<string> Members { get; set; } = new List<string>();
+        public List<Player> Members { get; set; } = new List<Player>();
 
         public bool Equals(Group other)
         {

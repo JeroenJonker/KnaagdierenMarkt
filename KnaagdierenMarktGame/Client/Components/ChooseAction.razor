@@ -3,7 +3,7 @@
 @using KnaagdierenMarktGame.Client.Classes
 
 @inject GameState gameState
-@inject GameConnection gameConnection
+@inject PeerConnection peerConnection
 
 <Header Title="@(IsCurrentPlayerUser ? "Choose an action" : "Waiting till action is chosen")" MainTextType="@(IsCurrentPlayerUser ? "ChooseAction_CurrentPlayer" : "ChooseAction_Others")"
         SmallHeaderText="@(IsCurrentPlayerUser ? "" : gameState.CurrentPlayer.Name)" />
@@ -37,13 +37,13 @@
     public async Task OnAuctionClick()
     {
         Message message = new Message() { MessageType = MessageType.Auction, Sender = gameState.User.Name };
-        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+        await peerConnection.SendMessageToPeers(message);
     }
 
     public async Task OnBuyOverClick()
     {
         Message message = new Message() { MessageType = MessageType.Trade, Sender = gameState.User.Name };
-        await gameConnection.HubConnection.SendAsync("SendMessage", message);
+        await peerConnection.SendMessageToPeers(message);
     }
 
     public bool HasUserSameAnimalCard(AnimalCard animalCard) => gameState.User.AnimalCards.Any(animalcard => animalcard.AnimalType == animalCard.AnimalType);

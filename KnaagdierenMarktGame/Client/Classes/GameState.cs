@@ -1,6 +1,5 @@
 ﻿using KnaagdierenMarktGame.Client.Enums;
 using KnaagdierenMarktGame.Shared;
-using Microsoft.AspNetCore.SignalR.Client;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -8,6 +7,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
+using KnaagdierenMarktGame.Shared.Enums;
 
 namespace KnaagdierenMarktGame.Client.Classes
 {
@@ -43,17 +43,17 @@ namespace KnaagdierenMarktGame.Client.Classes
         public States CurrentState
         {
             get { return currentState; }
-            set { currentState = value; OnPropertyChanged?.Invoke(CurrentState); }
+            set { currentState = value; OnPropertyChanged?.Invoke(CurrentState);  }
         }
 
         public Timer Timer { get; set; }
 
-        private readonly GameConnection gameConnection;
+        private readonly PeerConnection messageReceiver;
 
-        public GameState(GameConnection _gameConnection)
+        public GameState(ServerConnection _gameConnection, PeerConnection _messageReceiver)
         {
-            gameConnection = _gameConnection;
-            gameConnection.OnNewGameMessage += HandleMessage;
+            messageReceiver = _messageReceiver;
+            messageReceiver.OnNewGameMessage += HandleMessage;
         }
 
         private Task HandleMessage(Message message)
@@ -68,15 +68,16 @@ namespace KnaagdierenMarktGame.Client.Classes
         private void ResetAmountOfConnectionWarningsForPlayer(string playername) => 
             Players.First(player => player.Name == playername).AmountOfConnectionWarnings = 0;
 
-        public void GameSetup(string userName, List<string> playerNames, List<string> playerOrder)
+        public void GameSetup(string userName, List<Player> playerNames, List<Player> playerOrder)
         {
             RemainingAuctionCards.CollectionChanged += (object sender, NotifyCollectionChangedEventArgs e) => OnPropertyChanged?.Invoke(RemainingAuctionCards);
             SetupPlayers(playerOrder);
-            CurrentPlayer = Players.First(player => player.Name == playerOrder.First());
+            CurrentPlayer = Players.First(player => player.Name == playerOrder.First().Name);
             User = Players.First(player => player.Name == userName);
+            messageReceiver.StartConnections(Players.Where(player => player.Name != user.Name).ToList());
             SetupAuctionCards();
             CurrentState = States.ChooseAction;
-            StartConnectionChecker();
+            //StartConnectionChecker();
         }
 
         public void StartConnectionChecker()
@@ -85,12 +86,12 @@ namespace KnaagdierenMarktGame.Client.Classes
             Timer.Elapsed += HandleTimer;
             Timer.Start();
         }
-
+        //mogelijk herzien
         private async void HandleTimer(object sender, ElapsedEventArgs e)
         {
             RaiseAmountOfConnectionWarningsForPlayers();
             Message message = new Message() { MessageType = MessageType.StillConnected, Sender = User.Name };
-            await gameConnection.HubConnection.SendAsync("SendMessage", message);
+            await messageReceiver.SendMessageToPeers(message);
         }
 
         private void RaiseAmountOfConnectionWarningsForPlayers()
@@ -152,6 +153,11 @@ namespace KnaagdierenMarktGame.Client.Classes
         {
             foreach (AnimalTypes animalType in Enum.GetValues(typeof(AnimalTypes)))
             {
+                //temporary
+                if (animalType != AnimalTypes.Ezel)
+                {
+                    continue;
+                }
                 for (int x = 0; x < 4; x++)
                 {
                     RemainingAuctionCards.Add(new AnimalCard(animalType, (int)animalType));
@@ -159,14 +165,12 @@ namespace KnaagdierenMarktGame.Client.Classes
             }
         }
 
-        private void SetupPlayers(List<string> playerNames)
+        private void SetupPlayers(List<Player> players)
         {
-            foreach (string playerName in playerNames)
+            foreach (Player player in players)
             {
-                Player player = new Player(playerName)
-                {
-                    MoneyCards = new List<int>(StartingMoneyCards)
-                };
+                player.MoneyCards = new List<int>(StartingMoneyCards);
+                //player.AnimalCards.Add(new AnimalCard(AnimalTypes.Bok, 500)); /// wegahlen testen
                 Players.Add(player);
             }
         }
@@ -175,7 +179,7 @@ namespace KnaagdierenMarktGame.Client.Classes
         {
             Message message = new Message() { MessageType = MessageType.NextPlayer, Sender = User.Name };
             message.Objects.Add(GetNextPlayerName());
-            await gameConnection.HubConnection.SendAsync("SendMessage", message);
+            await messageReceiver.SendMessageToPeers(message);
         }
 
         private string GetNextPlayerName()
