@@ -154,14 +154,14 @@ namespace KnaagdierenMarktGame.Client.Classes
             foreach (AnimalTypes animalType in Enum.GetValues(typeof(AnimalTypes)))
             {
                 //temporary
-                if (animalType != AnimalTypes.Ezel)
-                {
-                    continue;
-                }
-                for (int x = 0; x < 4; x++)
-                {
-                    RemainingAuctionCards.Add(new AnimalCard(animalType, (int)animalType));
-                }
+                //if (animalType != AnimalTypes.Bok)
+                //{
+                //    continue;
+                //}
+                //for (int x = 0; x < 4; x++)
+                //{
+                //    RemainingAuctionCards.Add(new AnimalCard(animalType, (int)animalType));
+                //}
             }
         }
 
@@ -170,22 +170,44 @@ namespace KnaagdierenMarktGame.Client.Classes
             foreach (Player player in players)
             {
                 player.MoneyCards = new List<int>(StartingMoneyCards);
-                //player.AnimalCards.Add(new AnimalCard(AnimalTypes.Bok, 500)); /// wegahlen testen
+                player.AnimalCards.Add(new AnimalCard(AnimalTypes.Bok, 500)); /// wegahlen testen
                 Players.Add(player);
             }
         }
 
         public async Task SendNextPlayerMessage()
         {
-            Message message = new Message() { MessageType = MessageType.NextPlayer, Sender = User.Name };
-            message.Objects.Add(GetNextPlayerName());
+            Message message = new Message() { Sender = User.Name };
+            if (GetNextPlayerName() is string nextPlayer && !string.IsNullOrEmpty(nextPlayer))
+            {
+                message.MessageType = MessageType.NextPlayer;
+                message.Objects.Add(nextPlayer);
+            }
+            else
+            {
+                message.MessageType = MessageType.GameEnd;
+            }
             await messageReceiver.SendMessageToPeers(message);
         }
 
         private string GetNextPlayerName()
         {
-            int index = Players.FindIndex(player => player.Name == CurrentPlayer.Name);
-            return Players[index == Players.Count() - 1 ? 0 : index + 1].Name;
+            int userIndex = Players.FindIndex(player => player.Name == CurrentPlayer.Name);
+            int nextPlayerIndex = userIndex == Players.Count() - 1 ? 0 : userIndex + 1;
+            return GetNextAvailablePlayer(userIndex, nextPlayerIndex);
         }
+        private string GetNextAvailablePlayer(int userIndex, int nextPlayerIndex)
+        {
+            if (userIndex == nextPlayerIndex)
+                return "";
+            if (RemainingAuctionCards.Count() > 0 || CanPlayerTradeAnimalCards(Players[nextPlayerIndex]))
+                return Players[nextPlayerIndex].Name;
+            return GetNextAvailablePlayer(userIndex, nextPlayerIndex + 1 == Players.Count() ? 0 : nextPlayerIndex + 1);
+        }
+
+        public bool CanPlayerTradeAnimalCards(Player player) => Players.Where(pl => pl.Name != player.Name).Any(pl => pl.AnimalCards.Any(AnimalCard => HasPlayerSameAnimalCard(player, AnimalCard)));
+        public bool HasPlayerSameAnimalCard(Player player, AnimalCard animalCard) => player.AnimalCards.Any(animalcard => animalcard.AnimalType == animalCard.AnimalType);
+
+
     }
 }

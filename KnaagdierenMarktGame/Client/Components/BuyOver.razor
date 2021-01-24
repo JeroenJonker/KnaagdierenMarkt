@@ -8,7 +8,8 @@
 @inject GameState gameState
 @inject PeerConnection peerConnection
 
-<Header Title="Buy over" MainTextType="@(IsCurrentPlayerUser ? "BuyOver_CurrentPlayer" : "BuyOver_Others")" />
+<Header Title="Buy over" MainTextType="@(IsCurrentPlayerUser ? "BuyOver_CurrentPlayer" : "BuyOver_Others")" 
+        Description=@((ChosenAnimalCard != null) ? $"Buying {ChosenAnimalCard.AnimalType} from {ChosenPlayer.Name}" : "")/>
 
 
 @if (ChosenAnimalCard == null && gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer)
@@ -33,15 +34,14 @@
     }
 }
 
-@if (ChosenAnimalCard != null)
-{
-    <p>Buying @ChosenAnimalCard.AnimalType from @ChosenPlayer.Name </p>
-}
-
 @if (ShowMoneySelectors)
 {
+    if (CurrentPlayerOfferedMoneyCards.Count() > 0)
+    {
+    <p>@gameState.CurrentPlayer.Name has offered @CurrentPlayerOfferedMoneyCards.Count() cards </p>
+    }
     <MoneySelectors MoneyCards="@gameState.User.MoneyCards" @bind-ChosenMoneyCards="ChosenMoneyCards" />
-    <p class="AlignTextRight">Total amount of cards: @ChosenMoneyCards.Count()</p>
+    <p class="AlignTextRight">Total amount of cards: @ChosenMoneyCards.Sum(moneycards => moneycards.Value)</p>
     <p class="AlignTextRight">Current total: $@gameState.User.MoneyCards.Sum()</p>
     <p class="AlignTextRight Underline">Payment: -$@ChosenMoneyCards.Sum(a => (a.Key * a.Value))</p>
     <p class="AlignTextRight">New Total: $@(gameState.User.MoneyCards.Sum() - ChosenMoneyCards.Sum(a => (a.Key * a.Value))) </p>

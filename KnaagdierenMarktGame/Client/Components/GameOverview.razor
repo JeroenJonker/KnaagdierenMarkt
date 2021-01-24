@@ -5,7 +5,7 @@
 @inject GameState gameState
 @inject PeerConnection peerConnection
 
-@if (IsEndOfGame)
+@if (gameState.CurrentState == Enums.States.End || IsEndOfGame)
 {
     <EndScreen />
 }
@@ -54,6 +54,7 @@ else if (gameState.CurrentState == Enums.States.Trade)
                 case MessageType.Trade: gameState.CurrentState = Enums.States.Trade; break;
                 case MessageType.None: gameState.CurrentState = Enums.States.ChooseAction; StateHasChanged(); break;
                 case MessageType.NextPlayer: OnNextPlayer(message); break;
+                case MessageType.GameEnd: gameState.CurrentState = Enums.States.End; break;
             }
             StateHasChanged();
         }

@@ -1,7 +1,7 @@
 ﻿var lastPeerId = null;
 var peer = null;
 var peerId = null;
-var connections = [null, null, null, null];
+var connections = [null, null, null, null, null, null, null, null];
 var applicationName = 'KnaagdierenMarktGame.Client';
 
 // get available spot in connections to store the connection
@@ -84,18 +84,26 @@ function initializeConnection() {
 function join(recvIdInput) {
     var NextAvailableConnectionNumber = GetNextAvailableConnection();
     if (NextAvailableConnectionNumber > -1) {
-        connections[NextAvailableConnectionNumber] = peer.connect(recvIdInput, {
-            reliable: true
-        });
+        var connectNumber = NextAvailableConnectionNumber;
+        var connectionPosition = GetConnectionPositionFromID(recvIdInput);
+        if (connectionPosition > -1) {
+            connectNumber = connectionPosition;
+        }
+        else {
+            connections[connectNumber] = peer.connect(recvIdInput, {
+                reliable: true
+            });
 
-        connections[NextAvailableConnectionNumber].on('open', function () {
-            console.log("Connected to: " + connections[NextAvailableConnectionNumber].peer);
-        });
-        connections[NextAvailableConnectionNumber].on('data', function (data) {
+            connections[connectNumber].on('open', function () {
+                console.log("Connected to: " + connections[connectNumber].peer);
+            });
+        }
+
+        connections[connectNumber].on('data', function (data) {
             console.log("Data recieved");
             DotNet.invokeMethodAsync(applicationName, 'UpdateMessageCaller', data)
         });
-        connections[NextAvailableConnectionNumber].on('close', function () {
+        connections[connectNumber].on('close', function () {
             console.log("Connection closed");
         });
     }
