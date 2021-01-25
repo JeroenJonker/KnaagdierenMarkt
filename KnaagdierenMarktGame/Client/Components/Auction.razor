@@ -106,7 +106,7 @@
         base.OnInitialized();
     }
 
-    public async Task UpdateScreen(object ob) => StateHasChanged();
+    public async Task UpdateScreen(object ob) => await InvokeAsync(StateHasChanged);
 
     protected override Task OnInitializedAsync()
     {
@@ -124,8 +124,7 @@
             case MessageType.PulledAuctionCard: PulledActionCard(message); break;
             case MessageType.FailedOffer: OnFailedOffer(message); break;
         }
-        StateHasChanged();
-        //await Task.Run(() => StateHasChanged());
+        await InvokeAsync(StateHasChanged);
     }
 
     public void StartCountdown()

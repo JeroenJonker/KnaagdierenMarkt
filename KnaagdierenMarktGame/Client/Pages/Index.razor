@@ -25,7 +25,7 @@ else
         await serverConnection.StartConnection();
     }
 
-    public async Task UpdateScreen(object ob) => StateHasChanged();
+    public async Task UpdateScreen(object ob) => await InvokeAsync(StateHasChanged);
 
     public void Dispose()
     {

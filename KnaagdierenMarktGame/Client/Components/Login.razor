@@ -96,7 +96,7 @@
             case MessageType.GroupDeleted: OnGroupDeleted(message); break;
             case MessageType.StartGame: OnStartGame(message); break;
         }
-        StateHasChanged();
+        await InvokeAsync(StateHasChanged);
     }
 
     public void OnInitGroups(Message message)

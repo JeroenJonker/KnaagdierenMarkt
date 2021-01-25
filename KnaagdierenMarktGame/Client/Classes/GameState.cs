@@ -154,11 +154,6 @@ namespace KnaagdierenMarktGame.Client.Classes
         {
             foreach (AnimalTypes animalType in Enum.GetValues(typeof(AnimalTypes)))
             {
-                //temporary
-                if (animalType != AnimalTypes.Haan)
-                {
-                    continue;
-                }
                 for (int x = 0; x < 4; x++)
                 {
                     RemainingAuctionCards.Add(animalType);
@@ -171,7 +166,6 @@ namespace KnaagdierenMarktGame.Client.Classes
             foreach (Player player in players)
             {
                 player.MoneyCards = new List<int>(StartingMoneyCards);
-                player.AnimalCards.Add(AnimalTypes.Bok); /// wegahlen testen
                 Players.Add(player);
             }
         }
