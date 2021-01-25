@@ -2,6 +2,6 @@
 {
     public enum States
     {
-        Login, ChooseAction, Auction, Trade, Auction_Paying, End
+        Login, ChooseAction, Auction, BuyOver, Auction_Paying, End
     }
 }

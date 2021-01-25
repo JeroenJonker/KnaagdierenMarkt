@@ -1,7 +1,7 @@
 ﻿@using KnaagdierenMarktGame.Shared
+@using KnaagdierenMarktGame.Shared.Enums
 @using KnaagdierenMarktGame.Client.Classes
 @using Newtonsoft.Json
-@using KnaagdierenMarktGame.Shared.Enums
 @using System.Timers
 
 @inject PeerConnection peerConnection
@@ -11,7 +11,7 @@
 <Header Title="Auction" MainTextType="@(CountdownTimer == -1 || (CountdownTimer == 0 && HighestOffer == 0) ? "Auction_Bidding" : "Auction_Countdown" )"
         Description="@(CountdownTimer > 0 ? CountdownTimer.ToString() : "")" />
 
-@if (AuctionedAnimalCard != null && !ShowMoneySelectors)
+@if (AuctionedAnimalCard != default && !ShowMoneySelectors)
 {
     <div class="Auction-container">
         <div class="Auction-item">
@@ -28,9 +28,9 @@
             }
         </div>
         <div class="Auction-item">
-            <h2 class="Auction-header">@AuctionedAnimalCard.AnimalType</h2>
-            <h5>@AuctionedAnimalCard.Value</h5>
-            <img class="Auctioned-AnimalCard" src=@($"/Images/{AuctionedAnimalCard.AnimalType}.png") />
+            <h2 class="Auction-header">@AuctionedAnimalCard.ToString()</h2>
+            <h5>@((int)AuctionedAnimalCard)</h5>
+            <img class="Auctioned-AnimalCard" src=@($"/Images/{AuctionedAnimalCard.ToString()}.png") />
         </div>
     </div>
 }
@@ -38,7 +38,7 @@
 @if (gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer && !ShowMoneySelectors && gameState.CurrentState != Enums.States.Auction_Paying)
 {
     <div class="Auction-CurrentPlayerButtons-container">
-        @if (AuctionedAnimalCard == null)
+        @if (AuctionedAnimalCard == default)
         {
             <button @onclick="OnAuctionClick">Draw card</button>
         }
@@ -91,7 +91,7 @@
 
     public List<Player> Disqwalified { get; set; } = new List<Player>();
 
-    public AnimalCard AuctionedAnimalCard { get; set; }
+    public AnimalTypes AuctionedAnimalCard { get; set; }
 
     public Dictionary<int, int> ChosenMoneyCards = new Dictionary<int, int>();
 
@@ -158,17 +158,8 @@
 
     public void PayOffer(Message message)
     {
-        List<int> payment;
-        if (message.Objects[0] is List<int> correctpayment)
-        {
-            payment = correctpayment;
-        }
-        else
-        {
-            payment = JsonConvert.DeserializeObject<List<int>>(message.Objects[0].ToString());
-        }
+        List<int> payment = gameState.ConvertObjectToListOfInt(message.Objects[0]);
         HandleSoldAuctionCard(payment, message.Sender);
-        ResetAuction();
         if (gameState.CurrentPlayer.Name == gameState.User.Name)
         {
             gameState.SendNextPlayerMessage();
@@ -203,16 +194,9 @@
 
     public void PulledActionCard(Message message)
     {
-        if (message.Objects[0] is AnimalCard)
-        {
-            AuctionedAnimalCard = message.Objects[0] as AnimalCard;
-        }
-        else
-        {
-            AuctionedAnimalCard = JsonConvert.DeserializeObject<AnimalCard>(message.Objects[0].ToString());
-        }
+        AuctionedAnimalCard = gameState.ConvertObjectToAnimalType(message.Objects[0]);
         gameState.RemainingAuctionCards.Remove(AuctionedAnimalCard);
-        if (AuctionedAnimalCard.AnimalType == AnimalTypes.Ezel)
+        if (AuctionedAnimalCard == AnimalTypes.Ezel)
         {
             DunkeyRule();
         }
@@ -230,7 +214,7 @@
     }
 
     public int AmountOfAnimalTypeCardInOwned(AnimalTypes animalType) =>
-        gameState.Players.Sum(player => player.AnimalCards.Count(animalCard => animalCard.AnimalType == animalType));
+        gameState.Players.Sum(player => player.AnimalCards.Count(animalCard => animalCard == animalType));
 
     public void AddMoneyCardToAllPlayers(int value)
     {
@@ -257,30 +241,9 @@
         moneyReceiver.MoneyCards.AddRange(payment);
         if (moneyReceiver == gameState.User) { gameState.User = moneyReceiver; }
 
-        animalcardReceiver.MoneyCards = SubtractListFromList(animalcardReceiver.MoneyCards, payment);
+        animalcardReceiver.MoneyCards = gameState.SubtractListBFromListA(animalcardReceiver.MoneyCards, payment);
         animalcardReceiver.AnimalCards.Add(AuctionedAnimalCard);
         if (animalcardReceiver == gameState.User) { gameState.User = animalcardReceiver; }
-    }
-
-    public void ResetAuction()
-    {
-        AuctionedAnimalCard = null;
-        HighestOffer = 0;
-        HighestOfferPlayer = null;
-        ShowMoneySelectors = false;
-        ChosenMoneyCards.Clear();
-    }
-
-    public List<int> SubtractListFromList(List<int> listA, List<int> listB)
-    {
-        foreach (int number in listB)
-        {
-            if (listA.Contains(number))
-            {
-                listA.Remove(number);
-            }
-        }
-        return listA;
     }
 
     public async Task OnAuctionClick()

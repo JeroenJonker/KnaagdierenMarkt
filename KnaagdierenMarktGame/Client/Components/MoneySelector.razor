@@ -23,7 +23,6 @@
         set { amountOffered = value; OnAmountChanged.InvokeAsync(new KeyValuePair<int, int>(MoneyCardAmount, AmountOffered)); }
     }
 
-
     public int AmountLeft => TotalAmount - AmountOffered;
 
 }

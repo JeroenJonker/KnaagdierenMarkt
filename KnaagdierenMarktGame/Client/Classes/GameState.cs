@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Timers;
 using KnaagdierenMarktGame.Shared.Enums;
+using Newtonsoft.Json;
 
 namespace KnaagdierenMarktGame.Client.Classes
 {
@@ -17,7 +18,7 @@ namespace KnaagdierenMarktGame.Client.Classes
 
         public event PropertyChanged OnPropertyChanged;
 
-        public ObservableCollection<AnimalCard> RemainingAuctionCards { get; set; } = new ObservableCollection<AnimalCard>();
+        public ObservableCollection<AnimalTypes> RemainingAuctionCards { get; set; } = new ObservableCollection<AnimalTypes>();
 
         private List<int> StartingMoneyCards => new List<int>() { 0, 0, 10, 10, 10, 10, 50 };
 
@@ -43,7 +44,7 @@ namespace KnaagdierenMarktGame.Client.Classes
         public States CurrentState
         {
             get { return currentState; }
-            set { currentState = value; OnPropertyChanged?.Invoke(CurrentState);  }
+            set { currentState = value; OnPropertyChanged?.Invoke(CurrentState); }
         }
 
         public Timer Timer { get; set; }
@@ -65,7 +66,7 @@ namespace KnaagdierenMarktGame.Client.Classes
             return null;
         }
 
-        private void ResetAmountOfConnectionWarningsForPlayer(string playername) => 
+        private void ResetAmountOfConnectionWarningsForPlayer(string playername) =>
             Players.First(player => player.Name == playername).AmountOfConnectionWarnings = 0;
 
         public void GameSetup(string userName, List<Player> playerNames, List<Player> playerOrder)
@@ -77,7 +78,7 @@ namespace KnaagdierenMarktGame.Client.Classes
             peerConnection.StartConnections(Players.Where(player => player.Name != user.Name).ToList());
             SetupAuctionCards();
             CurrentState = States.ChooseAction;
-            //StartConnectionChecker();
+            StartConnectionChecker();
         }
 
         public void StartConnectionChecker()
@@ -86,7 +87,7 @@ namespace KnaagdierenMarktGame.Client.Classes
             Timer.Elapsed += HandleTimer;
             Timer.Start();
         }
-        //mogelijk herzien
+
         private async void HandleTimer(object sender, ElapsedEventArgs e)
         {
             RaiseAmountOfConnectionWarningsForPlayers();
@@ -113,7 +114,7 @@ namespace KnaagdierenMarktGame.Client.Classes
                 DetermineNewCurrentPlayer(player);
                 CurrentState = States.ChooseAction;
                 Players.Remove(player);
-                foreach (AnimalCard card in player.AnimalCards)
+                foreach (AnimalTypes card in player.AnimalCards)
                 {
                     RemainingAuctionCards.Add(card);
                 }
@@ -133,7 +134,7 @@ namespace KnaagdierenMarktGame.Client.Classes
         {
             foreach (Player player in Players)
             {
-                player.MoneyCards.AddRange(new List<int>{ 0, 10, 10});
+                player.MoneyCards.AddRange(new List<int> { 0, 10, 10 });
             }
         }
 
@@ -154,14 +155,14 @@ namespace KnaagdierenMarktGame.Client.Classes
             foreach (AnimalTypes animalType in Enum.GetValues(typeof(AnimalTypes)))
             {
                 //temporary
-                //if (animalType != AnimalTypes.Bok)
-                //{
-                //    continue;
-                //}
-                //for (int x = 0; x < 4; x++)
-                //{
-                //    RemainingAuctionCards.Add(new AnimalCard(animalType, (int)animalType));
-                //}
+                if (animalType != AnimalTypes.Haan)
+                {
+                    continue;
+                }
+                for (int x = 0; x < 4; x++)
+                {
+                    RemainingAuctionCards.Add(animalType);
+                }
             }
         }
 
@@ -170,7 +171,7 @@ namespace KnaagdierenMarktGame.Client.Classes
             foreach (Player player in players)
             {
                 player.MoneyCards = new List<int>(StartingMoneyCards);
-                player.AnimalCards.Add(new AnimalCard(AnimalTypes.Bok, 500)); /// wegahlen testen
+                player.AnimalCards.Add(AnimalTypes.Bok); /// wegahlen testen
                 Players.Add(player);
             }
         }
@@ -205,8 +206,33 @@ namespace KnaagdierenMarktGame.Client.Classes
             return GetNextAvailablePlayer(userIndex, nextPlayerIndex + 1 == Players.Count() ? 0 : nextPlayerIndex + 1);
         }
 
-        public bool CanPlayerTradeAnimalCards(Player player) => Players.Where(pl => pl.Name != player.Name).Any(pl => pl.AnimalCards.Any(AnimalCard => HasPlayerSameAnimalCard(player, AnimalCard)));
-        public bool HasPlayerSameAnimalCard(Player player, AnimalCard animalCard) => player.AnimalCards.Any(animalcard => animalcard.AnimalType == animalCard.AnimalType);
+        public bool CanPlayerTradeAnimalCards(Player player) => Players.Where(pl => pl.Name != player.Name).Any(pl => pl.AnimalCards.Any(AnimalCard => HasPlayerAnimalCard(player, AnimalCard)));
+        
+        public bool HasPlayerAnimalCard(Player player, AnimalTypes animalCard) => player.AnimalCards.Any(animalcard => animalcard == animalCard);
+        
+        public List<int> ConvertObjectToListOfInt(object toBeConvertedObject)
+        {
+            if (toBeConvertedObject is List<int> list)
+            {
+                return list;
+            }
+            else
+            {
+                return JsonConvert.DeserializeObject<List<int>>(toBeConvertedObject.ToString());
+            }
+        }
+
+        public AnimalTypes ConvertObjectToAnimalType(object toBeConvertedObject)
+        {
+            if (toBeConvertedObject is AnimalTypes)
+            {
+                return (AnimalTypes) Enum.Parse(typeof(AnimalTypes), toBeConvertedObject.ToString());
+            }
+            else
+            {
+                return JsonConvert.DeserializeObject<AnimalTypes>(toBeConvertedObject.ToString());
+            }
+        }
 
     }
 }

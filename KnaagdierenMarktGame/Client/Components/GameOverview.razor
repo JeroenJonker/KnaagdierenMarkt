@@ -1,4 +1,5 @@
 ﻿@using KnaagdierenMarktGame.Shared
+@using KnaagdierenMarktGame.Shared.Enums
 @using KnaagdierenMarktGame.Client.Classes
 
 @inject GameState gameState
@@ -10,13 +11,13 @@
 }
 else if (gameState.CurrentState == Enums.States.ChooseAction)
 {
-    <ChooseAction/>
+    <ChooseAction />
 }
 else if (gameState.CurrentState == Enums.States.Auction || gameState.CurrentState == Enums.States.Auction_Paying)
 {
     <Auction />
 }
-else if (gameState.CurrentState == Enums.States.Trade)
+else if (gameState.CurrentState == Enums.States.BuyOver)
 {
     <BuyOver />
 }
@@ -36,7 +37,7 @@ else if (gameState.CurrentState == Enums.States.Trade)
 
 @code
 {
-    public bool IsEndOfGame => (!gameState.Players.Any(player => CanPlayerTradeAnimalCards(player)) && gameState.RemainingAuctionCards.Count() < 1) || gameState.Players.Count() < 2;
+    public bool IsEndOfGame => (!gameState.Players.Any(player => !HasPlayerOnlyQuartetOfAnimalCards(player)) && gameState.RemainingAuctionCards.Count() < 1) || gameState.Players.Count() < 2;
 
     protected override void OnInitialized()
     {
@@ -50,7 +51,7 @@ else if (gameState.CurrentState == Enums.States.Trade)
         switch (message.MessageType)
         {
             case MessageType.Auction: gameState.CurrentState = Enums.States.Auction; break;
-            case MessageType.BuyOver: gameState.CurrentState = Enums.States.Trade; break;
+            case MessageType.BuyOver: gameState.CurrentState = Enums.States.BuyOver; break;
             case MessageType.ChooseAction: gameState.CurrentState = Enums.States.ChooseAction; StateHasChanged(); break;
             case MessageType.NextPlayer: OnNextPlayer(message); break;
             case MessageType.GameEnd: gameState.CurrentState = Enums.States.End; break;
@@ -65,16 +66,15 @@ else if (gameState.CurrentState == Enums.States.Trade)
 
     public async Task UpdateScreen(object ob) { StateHasChanged(); }
 
-    public bool CanPlayerTradeAnimalCards(Player player)
+    public bool HasPlayerOnlyQuartetOfAnimalCards(Player player)
     {
-        foreach (AnimalCard card in player.AnimalCards)
+        foreach (AnimalTypes card in player.AnimalCards)
         {
-            // zijn er nog kaarten over die geen kwartet zijn?
-            if (player.AnimalCards.Count(animalCard => animalCard.AnimalType == card.AnimalType) < 4)
+            if (player.AnimalCards.Count(animalCard => animalCard == card) < 4)
             {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 }

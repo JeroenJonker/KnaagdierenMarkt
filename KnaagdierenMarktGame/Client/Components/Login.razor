@@ -53,11 +53,13 @@
 @if (Group != null)
 {
     <div class="LoginWaitingScreen-container">
-        <h5>@($"{Group.Name} ")</h5>
+        <h5>@($"{Group.Name}")</h5>
+        <ul>
         @foreach (Player member in Group.Members)
         {
             <li>@member.Name</li>
         }
+        </ul>
         <button @onclick="LeaveGroup">Leave</button>
     </div>
 
@@ -82,11 +84,6 @@
             await JS.InvokeVoidAsync("initializeConnection");
         }
     }
-
-    //protected override async Task OnInitializedAsync()
-    //{
-    //    await JS.InvokeVoidAsync("receiveFunctions.initialize()");
-    //}
 
     protected async Task HandleMessage(Message message)
     {

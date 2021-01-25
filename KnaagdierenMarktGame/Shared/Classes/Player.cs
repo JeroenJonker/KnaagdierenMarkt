@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using KnaagdierenMarktGame.Shared.Enums;
 
 namespace KnaagdierenMarktGame.Shared
 {
@@ -9,7 +10,7 @@ namespace KnaagdierenMarktGame.Shared
 
         public List<int> MoneyCards { get; set; } = new List<int>();
 
-        public List<AnimalCard> AnimalCards { get; set; } = new List<AnimalCard>();
+        public List<AnimalTypes> AnimalCards { get; set; } = new List<AnimalTypes>();
 
         public int AmountOfConnectionWarnings { get; set; } = 0;
 

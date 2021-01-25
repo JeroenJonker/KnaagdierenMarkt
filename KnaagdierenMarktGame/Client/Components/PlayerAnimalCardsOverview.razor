@@ -1,21 +1,22 @@
-﻿@using KnaagdierenMarktGame.Shared 
+﻿@using KnaagdierenMarktGame.Shared
+@using KnaagdierenMarktGame.Shared.Enums
 
 <div class="PlayerAnimalCards-container">
-    @foreach (var animalCardGroup in AnimalCards.GroupBy(AnimalCard => AnimalCard.AnimalType))
+    @foreach (var animalCardGroup in AnimalCards.GroupBy(AnimalCard => AnimalCard))
     {
-    <div class="PlayerAnimalCard-container">
-        <img class="PlayerAnimalCards-item LittleAnimalCard-image" src=@($"/Images/{animalCardGroup.Key.ToString()}.png") />
-        <div class="PlayerAnimalCards-item">
-            <h5>@animalCardGroup.Key</h5>
-            <p>@((int)animalCardGroup.Key)</p>
-            <p>@animalCardGroup.Count().ToString() / 4</p>
+        <div class="PlayerAnimalCard-container">
+            <img class="PlayerAnimalCards-item LittleAnimalCard-image" src=@($"/Images/{animalCardGroup.Key.ToString()}.png") />
+            <div class="PlayerAnimalCards-item">
+                <h5>@animalCardGroup.Key</h5>
+                <p>@((int)animalCardGroup.Key)</p>
+                <p>@animalCardGroup.Count().ToString() / 4</p>
+            </div>
         </div>
-    </div>
     }
 </div>
 
 
 @code {
     [Parameter]
-    public List<AnimalCard> AnimalCards { get; set; }
+    public List<AnimalTypes> AnimalCards { get; set; }
 }

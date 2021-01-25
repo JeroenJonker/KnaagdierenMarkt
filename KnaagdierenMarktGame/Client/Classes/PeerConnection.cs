@@ -37,7 +37,6 @@ namespace KnaagdierenMarktGame.Client.Classes
 
         public async Task SendMessageToPeers(Message message, bool IsAlsoInternalMessage = true)
         {
-            //System.Diagnostics.Debug.WriteLine("message: " + message.MessageType + "from SENDMESSAGETOPEER");
             await JSRuntime.InvokeVoidAsync("sendMessageToAllPeers", message);
             if (IsAlsoInternalMessage)
             {

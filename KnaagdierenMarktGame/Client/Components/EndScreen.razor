@@ -1,13 +1,15 @@
 ﻿@using KnaagdierenMarktGame.Shared
+@using KnaagdierenMarktGame.Shared.Enums
 @using KnaagdierenMarktGame.Client.Classes
 @inject GameState gameState
 
-<Header Title="Final score" MainTextType="EndScreen" SmallHeaderText="@(PlayerScores.Aggregate((a, b) => b.Value < a.Value ? a : b ).Key.Name)" />
-
-@for (int x = 0; x < PlayerScores.Count(); x++)
-{
-    <p>@($"{x+1} place: {PlayerScores[x].Key.Name} with {PlayerScores[x].Value} points")</p>
-}
+<Header Title="Final score" MainTextType="EndScreen" SmallHeaderText="@(PlayerScores[0].Key.Name)" />
+<div class="EndScreenScoring-container">
+    @for (int x = 0; x < PlayerScores.Count(); x++)
+    {
+        <p>@($"{x+1} place: {PlayerScores[x].Key.Name} with {PlayerScores[x].Value} points")</p>
+    }
+</div>
 
 @code {
 
@@ -18,8 +20,8 @@
         List<KeyValuePair<Player, int>> PlayerScores = new List<KeyValuePair<Player, int>>();
         foreach (Player player in gameState.Players)
         {
-            List<AnimalCard> differentAnimalCards = player.AnimalCards.Distinct().ToList();
-            int score = differentAnimalCards.Sum(AnimalCard => AnimalCard.Value) * differentAnimalCards.Count();
+            List<AnimalTypes> differentAnimalCards = player.AnimalCards.Distinct().ToList();
+            int score = differentAnimalCards.Sum(AnimalCard => (int)AnimalCard) * differentAnimalCards.Count();
             PlayerScores.Add(new KeyValuePair<Player, int>(player, score));
         }
         PlayerScores = PlayerScores.OrderByDescending(playerscore => playerscore.Value).ToList();
