@@ -48,12 +48,12 @@ namespace KnaagdierenMarktGame.Client.Classes
 
         public Timer Timer { get; set; }
 
-        private readonly PeerConnection messageReceiver;
+        private readonly PeerConnection peerConnection;
 
-        public GameState(ServerConnection _gameConnection, PeerConnection _messageReceiver)
+        public GameState(PeerConnection _peerConnection)
         {
-            messageReceiver = _messageReceiver;
-            messageReceiver.OnNewGameMessage += HandleMessage;
+            peerConnection = _peerConnection;
+            peerConnection.OnNewGameMessage += HandleMessage;
         }
 
         private Task HandleMessage(Message message)
@@ -74,7 +74,7 @@ namespace KnaagdierenMarktGame.Client.Classes
             SetupPlayers(playerOrder);
             CurrentPlayer = Players.First(player => player.Name == playerOrder.First().Name);
             User = Players.First(player => player.Name == userName);
-            messageReceiver.StartConnections(Players.Where(player => player.Name != user.Name).ToList());
+            peerConnection.StartConnections(Players.Where(player => player.Name != user.Name).ToList());
             SetupAuctionCards();
             CurrentState = States.ChooseAction;
             //StartConnectionChecker();
@@ -91,7 +91,7 @@ namespace KnaagdierenMarktGame.Client.Classes
         {
             RaiseAmountOfConnectionWarningsForPlayers();
             Message message = new Message() { MessageType = MessageType.StillConnected, Sender = User.Name };
-            await messageReceiver.SendMessageToPeers(message);
+            await peerConnection.SendMessageToPeers(message);
         }
 
         private void RaiseAmountOfConnectionWarningsForPlayers()
@@ -137,7 +137,7 @@ namespace KnaagdierenMarktGame.Client.Classes
             }
         }
 
-        public List<int> SubtractListFromList(List<int> listA, List<int> listB)
+        public List<int> SubtractListBFromListA(List<int> listA, List<int> listB)
         {
             foreach (int number in listB)
             {
@@ -187,7 +187,7 @@ namespace KnaagdierenMarktGame.Client.Classes
             {
                 message.MessageType = MessageType.GameEnd;
             }
-            await messageReceiver.SendMessageToPeers(message);
+            await peerConnection.SendMessageToPeers(message);
         }
 
         private string GetNextPlayerName()
@@ -207,7 +207,6 @@ namespace KnaagdierenMarktGame.Client.Classes
 
         public bool CanPlayerTradeAnimalCards(Player player) => Players.Where(pl => pl.Name != player.Name).Any(pl => pl.AnimalCards.Any(AnimalCard => HasPlayerSameAnimalCard(player, AnimalCard)));
         public bool HasPlayerSameAnimalCard(Player player, AnimalCard animalCard) => player.AnimalCards.Any(animalcard => animalcard.AnimalType == animalCard.AnimalType);
-
 
     }
 }

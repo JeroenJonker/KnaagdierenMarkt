@@ -1,5 +1,4 @@
-﻿@using Microsoft.AspNetCore.SignalR.Client
-@using KnaagdierenMarktGame.Shared
+﻿@using KnaagdierenMarktGame.Shared
 @using KnaagdierenMarktGame.Client.Classes
 @using KnaagdierenMarktGame.Shared.Enums
 @using Newtonsoft.Json
@@ -55,7 +54,7 @@
 @code {
     public bool IsCurrentPlayerUser => gameState.CurrentPlayer != null && gameState.User == gameState.CurrentPlayer;
 
-    public bool HasTriedToBuyOutBefore = false;
+    public bool HasTriedToBuyOverBefore = false;
     public bool ShowMoneySelectors { get; set; } = false;
     public Dictionary<int, int> ChosenMoneyCards = new Dictionary<int, int>();
     public AnimalCard ChosenAnimalCard { get; set; }
@@ -80,14 +79,14 @@
     {
         switch (message.MessageType)
         {
-            case MessageType.BuyOutOffer: OnBuyOutOffer(message); break;
-            case MessageType.BuyOutCard: OnBuyOutCard(message); break;
-            case MessageType.BuyOutResult: OnBuyOutResult(message); break;
+            case MessageType.BuyOverOffer: OnBuyOverOffer(message); break;
+            case MessageType.BuyOverCard: OnBuyOverCard(message); break;
+            case MessageType.BuyOverResult: OnBuyOverResult(message); break;
         }
         StateHasChanged();
     }
 
-    public void OnBuyOutResult(Message message)
+    public void OnBuyOverResult(Message message)
     {
         string winner = message.Objects[0].ToString();
         if (gameState.CurrentPlayer.Name == winner)
@@ -104,7 +103,7 @@
         }
         else if (winner == "")
         {
-            if (HasTriedToBuyOutBefore == true)
+            if (HasTriedToBuyOverBefore == true)
             {
                 UpdatePlayersAnimalCards(gameState.CurrentPlayer, ChosenPlayer);
                 gameState.SendNextPlayerMessage();
@@ -112,7 +111,7 @@
             }
             else
             {
-                HasTriedToBuyOutBefore = true;
+                HasTriedToBuyOverBefore = true;
                 BuyOverAnimalCard(ChosenPlayer, ChosenAnimalCard);
             }
         }
@@ -156,7 +155,7 @@
         return listA;
     }
 
-    public void OnBuyOutCard(Message message)
+    public void OnBuyOverCard(Message message)
     {
         if (message.Objects[0] is AnimalCard)
         {
@@ -173,7 +172,7 @@
         }
     }
 
-    public void OnBuyOutOffer(Message message)
+    public void OnBuyOverOffer(Message message)
     {
         if (message.Sender == ChosenPlayer.Name)
         {
@@ -206,7 +205,7 @@
 
     public async Task DetermineResult()
     {
-        Message message = new Message() { MessageType = MessageType.BuyOutResult, Sender = gameState.User.Name, Target = ChosenPlayer.Name };
+        Message message = new Message() { MessageType = MessageType.BuyOverResult, Sender = gameState.User.Name, Target = ChosenPlayer.Name };
         if (CurrentPlayerOfferedMoneyCards.Sum() > ChosenPlayerOfferedMoneyCards.Sum())
         {
             message.Objects.Add(gameState.CurrentPlayer.Name);
@@ -225,7 +224,7 @@
     public async Task BuyOverAnimalCard(Player player, AnimalCard animalCard)
     {
         ShowMoneySelectors = true;
-        Message message = new Message() { MessageType = MessageType.BuyOutCard, Sender = gameState.User.Name, Target = player.Name };
+        Message message = new Message() { MessageType = MessageType.BuyOverCard, Sender = gameState.User.Name, Target = player.Name };
         message.Objects.Add(animalCard);
         await peerConnection.SendMessageToPeers(message);
     }
@@ -235,7 +234,7 @@
         List<int> offeredMoneyCards = ConvertChosenMoneyCardsToListOfIntegers();
         Message message = new Message()
         {
-            MessageType = MessageType.BuyOutOffer,
+            MessageType = MessageType.BuyOverOffer,
             Sender = gameState.User.Name,
             Target = (gameState.User.Name == gameState.CurrentPlayer.Name ? ChosenPlayer.Name : gameState.CurrentPlayer.Name)
         };

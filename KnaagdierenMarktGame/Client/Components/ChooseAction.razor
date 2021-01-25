@@ -1,5 +1,4 @@
-﻿@using Microsoft.AspNetCore.SignalR.Client
-@using KnaagdierenMarktGame.Shared
+﻿@using KnaagdierenMarktGame.Shared
 @using KnaagdierenMarktGame.Client.Classes
 
 @inject GameState gameState
@@ -42,7 +41,7 @@
 
     public async Task OnBuyOverClick()
     {
-        Message message = new Message() { MessageType = MessageType.Trade, Sender = gameState.User.Name };
+        Message message = new Message() { MessageType = MessageType.BuyOver, Sender = gameState.User.Name };
         await peerConnection.SendMessageToPeers(message);
     }
 

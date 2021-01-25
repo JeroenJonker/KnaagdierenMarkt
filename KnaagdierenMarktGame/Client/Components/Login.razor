@@ -139,9 +139,10 @@
         groups.Remove(group);
     }
 
-    public void OnStartGame(Message message)
+    public async void OnStartGame(Message message)
     {
         List<Player> playerOrder = JsonConvert.DeserializeObject<List<Player>>(message.Objects[0].ToString());
+        await serverConnection.EndConnection();
         gameState.GameSetup(UserName, Group.Members, playerOrder);
     }
 

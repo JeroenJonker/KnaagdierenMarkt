@@ -26,5 +26,9 @@ namespace KnaagdierenMarktGame.Client.Classes
         {
             await HubConnection.StartAsync();
         }
+        public async Task EndConnection()
+        {
+            await HubConnection.StopAsync();
+        }
     }
 }
