@@ -90,15 +90,15 @@ namespace KnaagdierenMarktGame.Server.Hubs
             }
         }
 
-        public override Task OnDisconnectedAsync(Exception exception)
+        public async override Task OnDisconnectedAsync(Exception exception)
         {
             if (_connectionIdToUsernamesAndGroups.ContainsKey(Context.ConnectionId))
             {
                 KeyValuePair<string, Group> leftUser = _connectionIdToUsernamesAndGroups[Context.ConnectionId];
-                LeaveGroup(leftUser.Key, leftUser.Value);
+                await LeaveGroup(leftUser.Key, leftUser.Value);
                 _connectionIdToUsernamesAndGroups.Remove(Context.ConnectionId);
             }
-            return base.OnDisconnectedAsync(exception);
+            await base.OnDisconnectedAsync(exception);
         }
     }
 }

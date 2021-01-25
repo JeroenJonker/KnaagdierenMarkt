@@ -94,36 +94,29 @@
                 case MessageType.BuyOverResult: OnBuyOverResult(message); break;
             }
             StateHasChanged();
+            //await Task.Run(() => StateHasChanged());
         }
 
-        public void OnBuyOverResult(Message message)
+        public async void OnBuyOverResult(Message message)
         {
             string winner = message.Objects[0].ToString();
-            if (gameState.CurrentPlayer.Name == winner)
+            if (winner == "" && HasTriedToBuyOverBefore != true)
             {
-                UpdatePlayersCards(gameState.CurrentPlayer, ChosenPlayer);
-                gameState.SendNextPlayerMessage();
-                gameState.CurrentState = Enums.States.ChooseAction;
+                HasTriedToBuyOverBefore = true;
+                await BuyOverAnimalCard(ChosenPlayer, ChosenAnimalCard);
             }
-            else if (ChosenPlayer.Name == winner)
+            else
             {
-                UpdatePlayersCards(ChosenPlayer, gameState.CurrentPlayer);
-                gameState.SendNextPlayerMessage();
+                if (gameState.CurrentPlayer.Name == winner || (winner == "" && HasTriedToBuyOverBefore == true))
+                {
+                    UpdatePlayersCards(gameState.CurrentPlayer, ChosenPlayer);
+                }
+                else if (ChosenPlayer.Name == winner)
+                {
+                    UpdatePlayersCards(ChosenPlayer, gameState.CurrentPlayer);
+                }
+                await gameState.SendNextPlayerMessage();
                 gameState.CurrentState = Enums.States.ChooseAction;
-            }
-            else if (winner == "")
-            {
-                if (HasTriedToBuyOverBefore == true)
-                {
-                    UpdatePlayersAnimalCards(gameState.CurrentPlayer, ChosenPlayer);
-                    gameState.SendNextPlayerMessage();
-                    gameState.CurrentState = Enums.States.ChooseAction;
-                }
-                else
-                {
-                    HasTriedToBuyOverBefore = true;
-                    BuyOverAnimalCard(ChosenPlayer, ChosenAnimalCard);
-                }
             }
         }
 
@@ -163,7 +156,7 @@
             }
         }
 
-        public void OnBuyOverOffer(Message message)
+        public async void OnBuyOverOffer(Message message)
         {
             if (message.Sender == ChosenPlayer.Name)
             {
@@ -177,7 +170,7 @@
             }
             if (gameState.User.Name == gameState.CurrentPlayer.Name && message.Target == gameState.User.Name)
             {
-                DetermineResult();
+                await DetermineResult();
             }
         }
 

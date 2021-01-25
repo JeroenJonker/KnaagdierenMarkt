@@ -125,6 +125,7 @@
             case MessageType.FailedOffer: OnFailedOffer(message); break;
         }
         StateHasChanged();
+        //await Task.Run(() => StateHasChanged());
     }
 
     public void StartCountdown()
@@ -156,13 +157,13 @@
         }
     }
 
-    public void PayOffer(Message message)
+    public async void PayOffer(Message message)
     {
         List<int> payment = gameState.ConvertObjectToListOfInt(message.Objects[0]);
         HandleSoldAuctionCard(payment, message.Sender);
         if (gameState.CurrentPlayer.Name == gameState.User.Name)
         {
-            gameState.SendNextPlayerMessage();
+            await gameState.SendNextPlayerMessage();
         }
         gameState.CurrentState = Enums.States.ChooseAction;
     }

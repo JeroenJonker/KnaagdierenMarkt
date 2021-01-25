@@ -31,11 +31,6 @@ function initializeConnection() {
     peer = new Peer(null, {
         debug: 2
     });
-    //peer = new Peer('', {
-    //    host: 'localhost',
-    //    port: 9000,
-    //    path: '/myapp'
-    //});
 
     peer.on('open', function (id) {
         // Workaround for peer.reconnect deleting previous id
