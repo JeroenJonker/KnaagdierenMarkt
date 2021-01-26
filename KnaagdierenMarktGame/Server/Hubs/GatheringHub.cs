@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace KnaagdierenMarktGame.Server.Hubs
 {
-    public class GameHub : Hub
+    public class GatheringHub : Hub
     {
         private static List<Group> _groups = new List<Group>();
         private static Dictionary<string, KeyValuePair<string, Group>> _connectionIdToUsernamesAndGroups = new Dictionary<string, KeyValuePair<string, Group>>();
@@ -76,10 +76,15 @@ namespace KnaagdierenMarktGame.Server.Hubs
                 yield return chosenPlayer;
             }
         }
-
-        public async Task LeaveGroup(string user, Group userGroup)
+        public async Task LeaveGroup(string user, string groupname)
         {
-            userGroup = _groups.Find(group => group.Name == userGroup.Name); //find 
+            Group userGroup = _groups.Find(group => group.Name == groupname);
+            await RemoveUserFromGroup(user, userGroup);
+        }
+
+        public async Task RemoveUserFromGroup(string user, Group userGroup)
+        {
+            userGroup = _groups.Find(group => group.Name == userGroup.Name); 
             Player leftplayer = userGroup.Members.Find(player => player.Name == user);
             userGroup.Members.Remove(leftplayer);
             await Clients.Others.SendAsync("ReceiveMessage", new Message() { MessageType = MessageType.LeftGroup, Objects = { user } } );
@@ -95,7 +100,7 @@ namespace KnaagdierenMarktGame.Server.Hubs
             if (_connectionIdToUsernamesAndGroups.ContainsKey(Context.ConnectionId))
             {
                 KeyValuePair<string, Group> leftUser = _connectionIdToUsernamesAndGroups[Context.ConnectionId];
-                await LeaveGroup(leftUser.Key, leftUser.Value);
+                await RemoveUserFromGroup(leftUser.Key, leftUser.Value);
                 _connectionIdToUsernamesAndGroups.Remove(Context.ConnectionId);
             }
             await base.OnDisconnectedAsync(exception);

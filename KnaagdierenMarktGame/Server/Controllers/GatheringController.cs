@@ -11,12 +11,10 @@ namespace KnaagdierenMarktGame.Server
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class GameController : ControllerBase
+    public class GatheringController : ControllerBase
     {
-        public List<string> GroupNames { get; set; } = new List<string>();
-
-        private readonly IHubContext<GameHub> hubContext;
-        public GameController(IHubContext<GameHub> context)
+        private readonly IHubContext<GatheringHub> hubContext;
+        public GatheringController(IHubContext<GatheringHub> context)
         {
             hubContext = context;
         }

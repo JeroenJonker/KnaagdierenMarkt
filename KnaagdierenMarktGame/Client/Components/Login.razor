@@ -172,7 +172,8 @@
 
     async Task LeaveGroup()
     {
-        await serverConnection.HubConnection.SendAsync("LeaveGroup", UserName, Group);
+        await serverConnection.HubConnection.SendAsync("LeaveGroup", UserName, Group.Name);
+        //await serverConnection.HubConnection.SendAsync("LeaveGroup", UserName, Group);
         RemoveMemberFromGroup(UserName);
         Group = null;
     }

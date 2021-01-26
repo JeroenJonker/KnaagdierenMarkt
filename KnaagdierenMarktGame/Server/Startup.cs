@@ -59,7 +59,7 @@ namespace KnaagdierenMarktGame.Server
             {
                 endpoints.MapRazorPages();
                 endpoints.MapControllers();
-                endpoints.MapHub<GameHub>("/gamehub");
+                endpoints.MapHub<GatheringHub>("/gatheringhub");
                 endpoints.MapFallbackToFile("index.html");
             });
         }

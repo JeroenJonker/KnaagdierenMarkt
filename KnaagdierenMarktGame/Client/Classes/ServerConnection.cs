@@ -16,7 +16,7 @@ namespace KnaagdierenMarktGame.Client.Classes
         public ServerConnection(Uri baseAdress)
         {
             HubConnection = new HubConnectionBuilder()
-            .WithUrl((new Uri(baseAdress, "/gamehub")).AbsoluteUri)
+            .WithUrl((new Uri(baseAdress, "/gatheringhub")).AbsoluteUri)
             .Build();
 
             HubConnection.On<Message>("ReceiveMessage", (message) => OnServerMessage?.Invoke(message));
