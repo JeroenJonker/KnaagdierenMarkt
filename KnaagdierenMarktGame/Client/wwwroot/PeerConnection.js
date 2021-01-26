@@ -1,5 +1,5 @@
 ﻿var lastPeerId = null;
-var peer = null;
+var peer = null; // own peer
 var peerId = null;
 var connections = [null, null, null, null, null, null, null, null];
 var applicationName = 'KnaagdierenMarktGame.Client';
@@ -76,16 +76,16 @@ function initializeConnection() {
     });
 }
 
-function join(recvIdInput) {
+function join(targetPeerID) {
     var NextAvailableConnectionNumber = GetNextAvailableConnection();
     if (NextAvailableConnectionNumber > -1) {
         var connectNumber = NextAvailableConnectionNumber;
-        var connectionPosition = GetConnectionPositionFromID(recvIdInput);
+        var connectionPosition = GetConnectionPositionFromID(targetPeerID);
         if (connectionPosition > -1) {
             connectNumber = connectionPosition;
         }
         else {
-            connections[connectNumber] = peer.connect(recvIdInput, {
+            connections[connectNumber] = peer.connect(targetPeerID, {
                 reliable: true
             });
 
